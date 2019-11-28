@@ -8,13 +8,13 @@ VERSIONS = (
 )
 
 
-def render(dir_, postgres_version, alpine_version):
-    with open(f'{dir_}/template.Dockerfile') as f:
+def render(postgres_version, alpine_version):
+    with open(f'template.Dockerfile') as f:
         template = f.read()
 
     rendered = template.format(alpine_version=alpine_version)
 
-    with open(f'{dir_}/{postgres_version}.Dockerfile', 'w') as f:
+    with open(f'{postgres_version}.Dockerfile', 'w') as f:
         f.write('# This file is generated from template.Dockerfile. Do not edit it directly.\n')
         f.write('###########################################################################\n\n')
         f.write(rendered)
@@ -22,5 +22,4 @@ def render(dir_, postgres_version, alpine_version):
 
 if __name__ == '__main__':
     for versions in VERSIONS:
-        render('backup', *versions)
-        render('restore', *versions)
+        render(*versions)
