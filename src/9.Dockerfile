@@ -1,9 +1,9 @@
 # This file is generated from template.Dockerfile. Do not edit it directly.
 ###########################################################################
 
-FROM alpine:3.10
+FROM alpine:3.6
 
-ADD src/install.sh install.sh
+ADD install.sh install.sh
 RUN sh install.sh && rm install.sh
 
 ENV POSTGRES_DATABASE **None**
@@ -22,8 +22,8 @@ ENV S3_S3V4 no
 ENV SCHEDULE **None**
 ENV DROP_PUBLIC no
 
-ADD src/run.sh run.sh
-ADD src/backup.sh backup.sh
-ADD src/restore.sh restore.sh
+ADD run.sh run.sh
+ADD backup.sh backup.sh
+ADD restore.sh restore.sh
 
 CMD ["sh", "run.sh"]

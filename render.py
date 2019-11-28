@@ -14,7 +14,7 @@ def render(postgres_version, alpine_version):
 
     rendered = template.format(alpine_version=alpine_version)
 
-    with open(f'{postgres_version}.Dockerfile', 'w') as f:
+    with open(f'src/{postgres_version}.Dockerfile', 'w') as f:
         f.write('# This file is generated from template.Dockerfile. Do not edit it directly.\n')
         f.write('###########################################################################\n\n')
         f.write(rendered)
