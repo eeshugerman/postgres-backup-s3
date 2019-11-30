@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/python3
 
 VERSIONS = (
     ('9', '3.6'),

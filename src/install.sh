@@ -1,12 +1,15 @@
 #! /bin/sh
 
-# exit if a command fails
 set -e
+set -o pipefail
 
 apk update
 
 # install pg_dump
 apk add postgresql-client
+
+# install gpg
+apk add gnupg
 
 # install s3 tools
 apk add python py-pip

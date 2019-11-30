@@ -1,30 +1,30 @@
 #! /bin/sh
 
-set -e
+set -eu
 set -o pipefail
 
-if [ "${S3_ACCESS_KEY_ID}" = "**None**" ]; then
+if [ -z "$S3_ACCESS_KEY_ID" ]; then
   echo "You need to set the S3_ACCESS_KEY_ID environment variable."
   exit 1
 fi
 
-if [ "${S3_SECRET_ACCESS_KEY}" = "**None**" ]; then
+if [ -z "$S3_SECRET_ACCESS_KEY" ]; then
   echo "You need to set the S3_SECRET_ACCESS_KEY environment variable."
   exit 1
 fi
 
-if [ "${S3_BUCKET}" = "**None**" ]; then
+if [ -z "$S3_BUCKET" ]; then
   echo "You need to set the S3_BUCKET environment variable."
   exit 1
 fi
 
-if [ "${POSTGRES_DATABASE}" = "**None**" ]; then
+if [ -z "$POSTGRES_DATABASE" ]; then
   echo "You need to set the POSTGRES_DATABASE environment variable."
   exit 1
 fi
 
-if [ "${POSTGRES_HOST}" = "**None**" ]; then
-  if [ -n "${POSTGRES_PORT_5432_TCP_ADDR}" ]; then
+if [ -z "$POSTGRES_HOST" ]; then
+  if [ -n "$POSTGRES_PORT_5432_TCP_ADDR" ]; then
     POSTGRES_HOST=$POSTGRES_PORT_5432_TCP_ADDR
     POSTGRES_PORT=$POSTGRES_PORT_5432_TCP_PORT
   else
@@ -33,49 +33,63 @@ if [ "${POSTGRES_HOST}" = "**None**" ]; then
   fi
 fi
 
-if [ "${POSTGRES_USER}" = "**None**" ]; then
+if [ -z "$POSTGRES_USER" ]; then
   echo "You need to set the POSTGRES_USER environment variable."
   exit 1
 fi
 
-if [ "${POSTGRES_PASSWORD}" = "**None**" ]; then
-  echo "You need to set the POSTGRES_PASSWORD environment variable or link to a container named POSTGRES."
+if [ -z "$POSTGRES_PASSWORD" ]; then
+  echo "You need to set the POSTGRES_PASSWORD environment variable" \
+       "or link to a container named POSTGRES."
   exit 1
 fi
 
-if [ "${S3_ENDPOINT}" == "**None**" ]; then
-    AWS_ARGS=""
+if [ -z "$S3_ENDPOINT" ]; then
+  aws_args=""
 else
-    AWS_ARGS="--endpoint-url ${S3_ENDPOINT}"
+  aws_args="--endpoint-url $S3_ENDPOINT"
 fi
 
-# env vars needed for aws tools
+
 export AWS_ACCESS_KEY_ID=$S3_ACCESS_KEY_ID
 export AWS_SECRET_ACCESS_KEY=$S3_SECRET_ACCESS_KEY
 export AWS_DEFAULT_REGION=$S3_REGION
-
 export PGPASSWORD=$POSTGRES_PASSWORD
-POSTGRES_HOST_OPTS="-h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER"
 
-echo "Finding latest backup"
+s3_uri_base="s3://${S3_BUCKET}/${S3_PREFIX}"
 
-LATEST_BACKUP=$(aws $AWS_ARGS s3 ls s3://$S3_BUCKET/$S3_PREFIX/ | sort | tail -n 1 | awk '{ print $4 }')
-
-echo "Fetching ${LATEST_BACKUP} from S3"
-
-aws $AWS_ARGS s3 cp s3://$S3_BUCKET/$S3_PREFIX/${LATEST_BACKUP} dump.sql.gz
-gzip -d dump.sql.gz
-
-if [ "${DROP_PUBLIC}" == "yes" ]; then
-	echo "Recreating the public schema"
-	psql $POSTGRES_HOST_OPTS -d $POSTGRES_DATABASE -c "drop schema public cascade; create schema public;"
+if [ -z "$PASSPHRASE" ]; then
+  file_type=".dump"
+else
+  file_type=".dump.gpg"
 fi
 
-echo "Restoring ${LATEST_BACKUP}"
+if [ $# -eq 1 ]; then
+  timestamp="$1"
+  key_suffix="${POSTGRES_DATABASE}_${timestamp}${file_type}"
+else
+  echo "Finding latest backup..."
+  key_suffix=$(
+    aws $aws_args s3 ls "${s3_uri_base}/" \
+      | sort \
+      | tail -n 1 \
+      | awk '{ print $4 }'
+  )
+fi
 
-psql $POSTGRES_HOST_OPTS -d $POSTGRES_DATABASE < dump.sql
+echo "Fetching backup from S3..."
+aws $aws_args s3 cp "${s3_uri_base}/${key_suffix}" "db${file_type}"
 
-rm dump.sql
+if [ -n "$PASSPHRASE" ]; then
+  echo "Decrypting backup..."
+  gpg --decrypt --batch --passphrase "$PASSPHRASE" db.dump.gpg > db.dump
+  rm db.dump.gpg
+fi
 
-echo "Restore complete"
+conn_opts="-h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE"
 
+echo "Restoring from backup..."
+pg_restore $conn_opts --single-transaction --clean db.dump
+rm db.dump
+
+echo "Restore complete."

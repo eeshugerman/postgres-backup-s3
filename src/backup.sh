@@ -1,30 +1,30 @@
 #! /bin/sh
 
-set -e
+set -eu
 set -o pipefail
 
-if [ "${S3_ACCESS_KEY_ID}" = "**None**" ]; then
+if [ -z "$S3_ACCESS_KEY_ID" ]; then
   echo "You need to set the S3_ACCESS_KEY_ID environment variable."
   exit 1
 fi
 
-if [ "${S3_SECRET_ACCESS_KEY}" = "**None**" ]; then
+if [ -z "$S3_SECRET_ACCESS_KEY" ]; then
   echo "You need to set the S3_SECRET_ACCESS_KEY environment variable."
   exit 1
 fi
 
-if [ "${S3_BUCKET}" = "**None**" ]; then
+if [ -z "$S3_BUCKET" ]; then
   echo "You need to set the S3_BUCKET environment variable."
   exit 1
 fi
 
-if [ "${POSTGRES_DATABASE}" = "**None**" ]; then
+if [ -z "$POSTGRES_DATABASE" ]; then
   echo "You need to set the POSTGRES_DATABASE environment variable."
   exit 1
 fi
 
-if [ "${POSTGRES_HOST}" = "**None**" ]; then
-  if [ -n "${POSTGRES_PORT_5432_TCP_ADDR}" ]; then
+if [ -z "$POSTGRES_HOST" ]; then
+  if [ -n "$POSTGRES_PORT_5432_TCP_ADDR" ]; then
     POSTGRES_HOST=$POSTGRES_PORT_5432_TCP_ADDR
     POSTGRES_PORT=$POSTGRES_PORT_5432_TCP_PORT
   else
@@ -33,36 +33,53 @@ if [ "${POSTGRES_HOST}" = "**None**" ]; then
   fi
 fi
 
-if [ "${POSTGRES_USER}" = "**None**" ]; then
+if [ -z "$POSTGRES_USER" ]; then
   echo "You need to set the POSTGRES_USER environment variable."
   exit 1
 fi
 
-if [ "${POSTGRES_PASSWORD}" = "**None**" ]; then
-  echo "You need to set the POSTGRES_PASSWORD environment variable or link to a container named POSTGRES."
+if [ -z "$POSTGRES_PASSWORD" ]; then
+  echo "You need to set the POSTGRES_PASSWORD environment variable."
   exit 1
 fi
 
-if [ "${S3_ENDPOINT}" == "**None**" ]; then
-  AWS_ARGS=""
+if [ -z "$S3_ENDPOINT" ]; then
+  aws_args=""
 else
-  AWS_ARGS="--endpoint-url ${S3_ENDPOINT}"
+  aws_args="--endpoint-url $S3_ENDPOINT"
 fi
 
-# env vars needed for aws tools
+
 export AWS_ACCESS_KEY_ID=$S3_ACCESS_KEY_ID
 export AWS_SECRET_ACCESS_KEY=$S3_SECRET_ACCESS_KEY
 export AWS_DEFAULT_REGION=$S3_REGION
-
 export PGPASSWORD=$POSTGRES_PASSWORD
-POSTGRES_HOST_OPTS="-h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $POSTGRES_EXTRA_OPTS"
 
-echo "Creating dump of ${POSTGRES_DATABASE} database from ${POSTGRES_HOST}..."
+echo "Creating backup of $POSTGRES_DATABASE database..."
+pg_dump --format=custom \
+        -h $POSTGRES_HOST \
+        -p $POSTGRES_PORT \
+        -U $POSTGRES_USER \
+        -d $POSTGRES_DATABASE \
+        $PGDUMP_EXTRA_OPTS \
+        > db.dump
 
-pg_dump $POSTGRES_HOST_OPTS $POSTGRES_DATABASE | gzip > dump.sql.gz
+timestamp=$(date +"%Y-%m-%dT%H:%M:%S")
+s3_uri_base="s3://${S3_BUCKET}/${S3_PREFIX}/${POSTGRES_DATABASE}_${timestamp}.dump"
 
-echo "Uploading dump to $S3_BUCKET"
+if [ -n "$PASSPHRASE" ]; then
+  echo "Encrypting backup..."
+  gpg --symmetric --batch --passphrase "$PASSPHRASE" db.dump
+  rm db.dump
+  local_file="db.dump.gpg"
+  s3_uri="${s3_uri_base}.gpg"
+else
+  local_file="db.dump"
+  s3_uri="$s3_uri_base"
+fi
 
-cat dump.sql.gz | aws $AWS_ARGS s3 cp - s3://$S3_BUCKET/$S3_PREFIX/${POSTGRES_DATABASE}_$(date +"%Y-%m-%dT%H:%M:%SZ").sql.gz || exit 2
+echo "Uploading backup to $S3_BUCKET..."
+aws $aws_args s3 cp "$local_file" "$s3_uri"
+rm "$local_file"
 
-echo "SQL backup uploaded successfully"
+echo "Backup complete."
