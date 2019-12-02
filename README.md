@@ -4,7 +4,7 @@ This project provides Docker images to periodically backup a PostgreSQL database
 # Credit where due
 This repository is a fork and re-structuring of schickling's [postgres-backup-s3](https://github.com/schickling/dockerfiles/tree/master/postgres-backup-s3) and [postgres-restore-s3](https://github.com/schickling/dockerfiles/tree/master/postgres-restore-s3).
 
-Fork goals:
+fork goals:
   - [x] dedicated repository
   - [x] automated builds
   - [x] support multiple PostgreSQL versions
@@ -12,14 +12,13 @@ Fork goals:
   - [x] support encrypted (password-protected) backups
   - [x] option to restore from specific backup by timestamp
 
-Other changes:
+other changes:
   - uses `pg_dump`'s `custom` format (see [docs](https://www.postgresql.org/docs/10/app-pgdump.html))
   - backup blobs and all schemas by default
   - recreate all database objects on restore
   - some env vars renamed
   - only scheduled backups supported, not ad-hoc
 
--------
 
 # Usage
 ## Backup
@@ -30,7 +29,7 @@ postgres:
     POSTGRES_USER: user
     POSTGRES_PASSWORD: password
 
-pgbackups3:
+pg_backup_s3:
   image: eeshugerman/postgres-backup-s3:11
   environment:
     SCHEDULE: '@daily'
@@ -44,26 +43,21 @@ pgbackups3:
     POSTGRES_USER: user
     POSTGRES_PASSWORD: password
 ```
-### Notes
-#### PostgreSQL version
-Images are tagged by the major PostgreSQL version they support: `9`, `10`, `11`, or `12`.
-#### Scheduling
-The `SCHEDULE` variable is determines backup frequency. See go-cron schedules documentation [here](http://godoc.org/github.com/robfig/cron#hdr-Predefined_schedules).
-#### Encrypted backups
-If `PASSPHRASE` is provided, the backup will be encrypted using GPG.
+- Images are tagged by the major PostgreSQL version they support: `9`, `10`, `11`, or `12`.
+- The `SCHEDULE` variable determines backup frequency. See go-cron schedules documentation [here](http://godoc.org/github.com/robfig/cron#hdr-Predefined_schedules).
+- If `PASSPHRASE` is provided, the backup will be encrypted using GPG.
 
 ## Restore
-> WARNING: DATA LOSS! All database objects will be dropped and recreated.
+> **WARNING**: DATA LOSS! All database objects will be dropped and re-created.
 
-### From latest backup (based on unix sort)
+### ... from latest backup
 ```sh
 docker exec <container name> sh restore.sh
 ```
-#### Notes
-- If your bucket has more than a 1000 files the latest may not be restored, only one S3 `ls` command is used
-- Your S3 prefix should only contain backups which you wish to restore - 'latest' is determined based on unix sort with no filtering
+- If your bucket has more than a 1000 files, the latest may not be restored -- only one S3 `ls` command is used
+- Your S3 prefix should only contain backups which you wish to restore -- 'latest' is determined based on unix sort with no filtering
 
-### From specific backup
+### ... from specific backup
 ```sh
 docker exec <container name> sh restore.sh <timestamp>
 ```
