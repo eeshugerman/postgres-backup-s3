@@ -33,7 +33,7 @@ postgres:
 pg_backup_s3:
   image: eeshugerman/postgres-backup-s3:11
   environment:
-    SCHEDULE: '@weekly
+    SCHEDULE: '@weekly'
     PASSPHRASE: passphrase
     S3_REGION: region
     S3_ACCESS_KEY_ID: key
