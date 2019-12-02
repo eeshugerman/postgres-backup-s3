@@ -8,7 +8,7 @@ fork goals:
   - [x] dedicated repository
   - [x] automated builds
   - [x] support multiple PostgreSQL versions
-  - [x] merge backup and restore images?
+  - [x] merge backup and restore images
   - [x] support encrypted (password-protected) backups
   - [x] option to restore from specific backup by timestamp
 
@@ -18,6 +18,7 @@ other changes:
   - recreate all database objects on restore
   - some env vars renamed
   - only scheduled backups supported, not ad-hoc
+  - filter backups on S3 by database name
 
 
 # Usage
@@ -32,7 +33,7 @@ postgres:
 pg_backup_s3:
   image: eeshugerman/postgres-backup-s3:11
   environment:
-    SCHEDULE: '@daily'
+    SCHEDULE: '@weekly
     PASSPHRASE: passphrase
     S3_REGION: region
     S3_ACCESS_KEY_ID: key
@@ -48,14 +49,13 @@ pg_backup_s3:
 - If `PASSPHRASE` is provided, the backup will be encrypted using GPG.
 
 ## Restore
-> **WARNING**: DATA LOSS! All database objects will be dropped and re-created.
+> **WARNING:** DATA LOSS! All database objects will be dropped and re-created.
 
 ### ... from latest backup
 ```sh
 docker exec <container name> sh restore.sh
 ```
-- If your bucket has more than a 1000 files, the latest may not be restored -- only one S3 `ls` command is used
-- Your S3 prefix should only contain backups which you wish to restore -- 'latest' is determined based on unix sort with no filtering
+> **NOTE:** If your bucket has more than a 1000 files, the latest may not be restored -- only one S3 `ls` command is used
 
 ### ... from specific backup
 ```sh
