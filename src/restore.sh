@@ -24,6 +24,7 @@ if [ -z "$POSTGRES_DATABASE" ]; then
 fi
 
 if [ -z "$POSTGRES_HOST" ]; then
+  # TODO: what is this?
   if [ -n "$POSTGRES_PORT_5432_TCP_ADDR" ]; then
     POSTGRES_HOST=$POSTGRES_PORT_5432_TCP_ADDR
     POSTGRES_PORT=$POSTGRES_PORT_5432_TCP_PORT
