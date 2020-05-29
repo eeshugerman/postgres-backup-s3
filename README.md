@@ -57,6 +57,5 @@ This project is a fork and re-structuring of schickling's [postgres-backup-s3](h
   - backup blobs and all schemas by default
   - drop and re-create all database objects on restore
   - some env vars renamed or removed
-  - `SCHEDULE` env var is required (but backups can still be triggered ad-hoc)
   - filter backups on S3 by database name
 

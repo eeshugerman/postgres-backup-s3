@@ -7,7 +7,9 @@ if [ "$S3_S3V4" = "yes" ]; then
 fi
 
 if [ -z "$SCHEDULE" ]; then
-  echo "You need to set the SCHEDULE environment variable."
+    # TODO: how to make CTRL-C work?
+    echo "WARNING: $SCHEDULE is null. Going to sleep."
+    tail -f /dev/null # do nothing forever
 else
   exec go-cron "$SCHEDULE" /bin/sh backup.sh
 fi
