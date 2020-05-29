@@ -12,9 +12,8 @@ apk add postgresql-client
 apk add gnupg
 
 # install s3 tools
-apk add python py-pip
-pip install awscli
-apk del py-pip
+apk add python3
+pip3 install awscli
 
 # install go-cron
 apk add curl

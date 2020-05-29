@@ -54,6 +54,7 @@ This project is a fork and re-structuring of schickling's [postgres-backup-s3](h
 
 ## Other changes
   - uses `pg_dump`'s `custom` format (see [docs](https://www.postgresql.org/docs/10/app-pgdump.html))
+  - doesn't use Python 2
   - backup blobs and all schemas by default
   - drop and re-create all database objects on restore
   - some env vars renamed or removed
