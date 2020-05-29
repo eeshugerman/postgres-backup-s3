@@ -1,0 +1,17 @@
+#!/bin/bash
+set -eux
+
+declare -A arr
+arr[9]=3.6
+arr[10]=3.8
+arr[11]=3.10
+arr[12]=edge
+
+
+for i in "${!arr[@]}"; do
+  docker build \
+         --build-arg "ALPINE_VERSION=${arr[$i]}" \
+         --tag "postgres-backup-s3:$i" \
+         .
+done
+

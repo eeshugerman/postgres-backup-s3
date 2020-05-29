@@ -1,6 +1,6 @@
 #! /bin/sh
 
-set -e
+set -eux
 set -o pipefail
 
 apk update
@@ -11,8 +11,8 @@ apk add postgresql-client
 # install gpg
 apk add gnupg
 
-# install s3 tools
 apk add python3
+apk add py3-pip  # separate package on edge only
 pip3 install awscli
 
 # install go-cron
