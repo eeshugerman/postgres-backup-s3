@@ -1,6 +1,6 @@
 #! /bin/sh
 
-set -eu
+set -u
 set -o pipefail
 
 if [ -z "$S3_ACCESS_KEY_ID" ]; then
@@ -90,7 +90,7 @@ fi
 conn_opts="-h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE"
 
 echo "Restoring from backup..."
-pg_restore $conn_opts --single-transaction --clean db.dump
+pg_restore $conn_opts --clean --if-exists db.dump
 rm db.dump
 
 echo "Restore complete."
