@@ -5,7 +5,7 @@ declare -A arr
 arr[9]=3.6
 arr[10]=3.8
 arr[11]=3.10
-arr[12]=edge
+arr[12]=3.11
 
 
 for i in "${!arr[@]}"; do
