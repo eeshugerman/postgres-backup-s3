@@ -20,6 +20,7 @@ pg_backup_s3:
     S3_SECRET_ACCESS_KEY: secret
     S3_BUCKET: my-bucket
     S3_PREFIX: backup
+    POSTGRES_HOST: postgres
     POSTGRES_DATABASE: dbname
     POSTGRES_USER: user
     POSTGRES_PASSWORD: password
@@ -48,7 +49,7 @@ This project is a fork and re-structuring of schickling's [postgres-backup-s3](h
   - [x] dedicated repository
   - [x] automated builds
   - [x] support multiple PostgreSQL versions
-  - [x] merge backup and restore images
+  - [x] backup and restore with one image
   - [x] support encrypted (password-protected) backups
   - [x] option to restore from specific backup by timestamp
 
@@ -59,4 +60,3 @@ This project is a fork and re-structuring of schickling's [postgres-backup-s3](h
   - drop and re-create all database objects on restore
   - some env vars renamed or removed
   - filter backups on S3 by database name
-
