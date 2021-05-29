@@ -6,7 +6,7 @@ arr[9]=3.6
 arr[10]=3.8
 arr[11]=3.10
 arr[12]=3.11
-
+arr[13]=3.13
 
 for i in "${!arr[@]}"; do
   docker build \
