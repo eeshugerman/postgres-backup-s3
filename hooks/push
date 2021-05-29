@@ -2,7 +2,7 @@
 
 set -eux
 
-pg_versions=(9 10 11 12)
+pg_versions=(9 10 11 12 13)
 
 for pg_ver in ${pg_versions[@]}; do
   docker tag postgres-backup-s3:$pg_ver $DOCKER_REPO:$pg_ver
