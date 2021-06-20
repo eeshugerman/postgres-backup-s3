@@ -1,17 +1,12 @@
 #!/bin/bash
 set -eux
 
-declare -A arr
-arr[9]=3.6
-arr[10]=3.8
-arr[11]=3.10
-arr[12]=3.11
+source ./hooks/versions.sh
 
-
-for i in "${!arr[@]}"; do
+for pg_version in ${!VERSIONS[@]}; do
   docker build \
-         --build-arg "ALPINE_VERSION=${arr[$i]}" \
-         --tag "postgres-backup-s3:$i" \
+         --build-arg "ALPINE_VERSION=${VERSIONS[$pg_version]}" \
+         --tag "postgres-backup-s3:$pg_version" \
          .
 done
 
