@@ -3,7 +3,7 @@ set -eux
 
 source ./hooks/versions.sh
 
-for pg_version in ${VERSIONS[@]}; do
+for pg_version in ${!VERSIONS[@]}; do
   docker tag postgres-backup-s3:$pg_version $DOCKER_REPO:$pg_version
   docker push $DOCKER_REPO:$pg_version
 done
