@@ -25,7 +25,7 @@ pg_backup_s3:
     POSTGRES_USER: user
     POSTGRES_PASSWORD: password
 ```
-- Images are tagged by the major PostgreSQL version they support: `9`, `10`, `11`, `12`, or `13`.
+- Images are tagged by the major PostgreSQL version they support: `10`, `11`, `12`, `13`, or `14`.
 - The `SCHEDULE` variable determines backup frequency. See go-cron schedules documentation [here](http://godoc.org/github.com/robfig/cron#hdr-Predefined_schedules). Omit to run the backup immediately and then exit.
 - If `PASSPHRASE` is provided, the backup will be encrypted using GPG.
 - Run `docker exec <container name> sh backup.sh` to trigger a backup ad-hoc
