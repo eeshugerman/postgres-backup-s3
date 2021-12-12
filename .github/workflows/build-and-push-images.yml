@@ -6,6 +6,14 @@ on:
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { postgres: 10, alpine: 3.8  }
+          - { postgres: 11, alpine: 3.10 }
+          - { postgres: 12, alpine: 3.12 }
+          - { postgres: 13, alpine: 3.14 }
+          - { postgres: 14, alpine: 3.15 }
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -23,4 +31,4 @@ jobs:
           push: true
           tags: ${{ github.repository }}:9
           build-args: |
-            ALPINE_VERSION=3.6
+            ALPINE_VERSION=${{ matrix.alpine }}
