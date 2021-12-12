@@ -1,4 +1,4 @@
-name: Build and push images
+name: build and push images
 on:
   push:
     branches: ['master']
@@ -9,6 +9,7 @@ jobs:
     strategy:
       matrix:
         include:
+          - { postgres: 9,  alpine: '3.6'  }
           - { postgres: 10, alpine: '3.8'  }
           - { postgres: 11, alpine: '3.10' }
           - { postgres: 12, alpine: '3.12' }
@@ -29,6 +30,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ github.repository }}:9
+          tags: ${{ github.repository }}:{{ matrix.postgres }}
           build-args: |
             ALPINE_VERSION=${{ matrix.alpine }}
