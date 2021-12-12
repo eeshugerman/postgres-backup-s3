@@ -1,7 +1,0 @@
-declare -A versions
-# VERSIONS[<postgres>]=<alpine>
-VERSIONS[10]=3.8
-VERSIONS[11]=3.10
-VERSIONS[12]=3.12
-VERSIONS[13]=3.14
-VERSIONS[14]=3.15

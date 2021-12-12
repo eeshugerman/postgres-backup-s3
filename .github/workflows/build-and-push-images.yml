@@ -9,7 +9,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - { postgres: 9,  alpine: '3.6'  }
           - { postgres: 10, alpine: '3.8'  }
           - { postgres: 11, alpine: '3.10' }
           - { postgres: 12, alpine: '3.12' }
