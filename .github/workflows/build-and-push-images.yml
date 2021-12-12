@@ -21,6 +21,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ github.repository }}/9
+          tags: ${{ github.repository }}:9
           build-args: |
             ALPINE_VERSION=3.6
