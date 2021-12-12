@@ -30,6 +30,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ github.repository }}:{{ matrix.postgres }}
+          tags: ${{ github.repository }}:${{ matrix.postgres }}
           build-args: |
             ALPINE_VERSION=${{ matrix.alpine }}
