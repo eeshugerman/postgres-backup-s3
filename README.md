@@ -55,6 +55,7 @@ This project is a fork and re-structuring of @schickling's [postgres-backup-s3](
   - [x] backup and restore with one image
   - [x] support encrypted (password-protected) backups
   - [x] option to restore from specific backup by timestamp
+  - [x] auto-removal old backups
 
 ## Other changes
   - uses `pg_dump`'s `custom` format (see [docs](https://www.postgresql.org/docs/10/app-pgdump.html))
