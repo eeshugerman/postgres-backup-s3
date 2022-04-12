@@ -79,7 +79,16 @@ else
 fi
 
 echo "Uploading backup to $S3_BUCKET..."
-aws $aws_args s3 cp "$local_file" "$s3_uri"
+aws "$aws_args" s3 cp "$local_file" "$s3_uri"
 rm "$local_file"
 
 echo "Backup complete."
+
+if [ "$BACKUP_KEEP_DAYS" -ne 0 ]; then
+  date_from_remove=$(date -v -"${BACKUP_KEEP_DAYS}"d +"%Y-%m-%d")
+  backups_query="Contents[?LastModified<='${date_from_remove} 00:00:00'].{Key: Key}"
+  remove_backups=$(aws s3api list-objects-v2 --bucket "${S3_BUCKET}" --prefix "${S3_PREFIX}" --query "${backups_query}" --output text | xargs -n1 -t -I 'KEY' aws s3 rm s3://"${S3_BUCKET}"/'KEY')
+  echo "Removing old backup from $S3_BUCKET..."
+  eval "$remove_backups";
+  echo "Removing complete."
+fi
