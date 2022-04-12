@@ -85,7 +85,7 @@ rm "$local_file"
 echo "Backup complete."
 
 if [ "$BACKUP_KEEP_DAYS" -ne 0 ]; then
-  ms=$((2*BACKUP_KEEP_DAYS+1))
+  ms=$((86400*BACKUP_KEEP_DAYS))
   date_from_remove=$(date -d "@$(($(date +%s) - ms))" +%Y-%m-%d)
   backups_query="Contents[?LastModified<='${date_from_remove} 00:00:00'].{Key: Key}"
 
