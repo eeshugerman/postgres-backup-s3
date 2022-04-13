@@ -24,7 +24,7 @@ pg_backup_s3:
     POSTGRES_DATABASE: dbname
     POSTGRES_USER: user
     POSTGRES_PASSWORD: password
-    BACKUP_KEEP_DAYS: 7
+    BACKUP_KEEP_DAYS: 7 // Disabled by default.
 ```
 
 - Images are tagged by the major PostgreSQL version they support: `10`, `11`, `12`, `13`, or `14`.
