@@ -24,11 +24,14 @@ pg_backup_s3:
     POSTGRES_DATABASE: dbname
     POSTGRES_USER: user
     POSTGRES_PASSWORD: password
+    BACKUP_KEEP_DAYS: 7 // Disabled by default.
 ```
+
 - Images are tagged by the major PostgreSQL version they support: `10`, `11`, `12`, `13`, or `14`.
 - The `SCHEDULE` variable determines backup frequency. See go-cron schedules documentation [here](http://godoc.org/github.com/robfig/cron#hdr-Predefined_schedules). Omit to run the backup immediately and then exit.
 - If `PASSPHRASE` is provided, the backup will be encrypted using GPG.
 - Run `docker exec <container name> sh backup.sh` to trigger a backup ad-hoc
+- Use `BACKUP_KEEP_DAYS` to set time for how long you want to keep backup.
 
 ## Restore
 > **WARNING:** DATA LOSS! All database objects will be dropped and re-created.
@@ -52,6 +55,7 @@ This project is a fork and re-structuring of @schickling's [postgres-backup-s3](
   - [x] backup and restore with one image
   - [x] support encrypted (password-protected) backups
   - [x] option to restore from specific backup by timestamp
+  - [x] auto-removal old backups
 
 ## Other changes
   - uses `pg_dump`'s `custom` format (see [docs](https://www.postgresql.org/docs/10/app-pgdump.html))
