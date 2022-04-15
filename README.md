@@ -13,8 +13,9 @@ postgres:
 pg_backup_s3:
   image: eeshugerman/postgres-backup-s3:13
   environment:
-    SCHEDULE: '@weekly'
-    PASSPHRASE: passphrase
+    SCHEDULE: '@weekly'     # optional
+    BACKUP_KEEP_DAYS: 7     # optional
+    PASSPHRASE: passphrase  # optional
     S3_REGION: region
     S3_ACCESS_KEY_ID: key
     S3_SECRET_ACCESS_KEY: secret
@@ -24,7 +25,6 @@ pg_backup_s3:
     POSTGRES_DATABASE: dbname
     POSTGRES_USER: user
     POSTGRES_PASSWORD: password
-    BACKUP_KEEP_DAYS: 7 // Disabled by default.
 ```
 
 - Images are tagged by the major PostgreSQL version they support: `10`, `11`, `12`, `13`, or `14`.
