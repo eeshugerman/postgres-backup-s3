@@ -49,8 +49,13 @@ docker exec <container name> sh restore.sh <timestamp>
 ## Build the image locally
 `ALPINE_VERSION` determines Postgres version compatibility. See [`build-and-push-images.yml`](.github/workflows/build-and-push-images.yml) for the latest mapping.
 ```sh
-cd postgres-backup-s3
 docker build --build-arg ALPINE_VERSION=3.14
+```
+## Run a simple test environment with Docker Compose
+```sh
+cp template.env .env
+# fill out your secrets/params in .env
+docker compose up -d
 ```
 
 # Acknowledgements
