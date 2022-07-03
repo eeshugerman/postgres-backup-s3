@@ -45,6 +45,14 @@ docker exec <container name> sh restore.sh
 docker exec <container name> sh restore.sh <timestamp>
 ```
 
+# Development
+## Build the image locally
+`ALPINE_VERSION` determines Postgres version compatibility. See [`build-and-push-images.yml`](.github/workflows/build-and-push-images.yml) for the latest mapping.
+```sh
+cd postgres-backup-s3
+docker build --build-arg ALPINE_VERSION=3.14
+```
+
 # Acknowledgements
 This project is a fork and re-structuring of @schickling's [postgres-backup-s3](https://github.com/schickling/dockerfiles/tree/master/postgres-backup-s3) and [postgres-restore-s3](https://github.com/schickling/dockerfiles/tree/master/postgres-restore-s3).
 
