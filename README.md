@@ -4,27 +4,28 @@ This project provides Docker images to periodically back up a PostgreSQL databas
 # Usage
 ## Backup
 ```yaml
-postgres:
-  image: postgres:13
-  environment:
-    POSTGRES_USER: user
-    POSTGRES_PASSWORD: password
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
 
-pg_backup_s3:
-  image: eeshugerman/postgres-backup-s3:13
-  environment:
-    SCHEDULE: '@weekly'     # optional
-    BACKUP_KEEP_DAYS: 7     # optional
-    PASSPHRASE: passphrase  # optional
-    S3_REGION: region
-    S3_ACCESS_KEY_ID: key
-    S3_SECRET_ACCESS_KEY: secret
-    S3_BUCKET: my-bucket
-    S3_PREFIX: backup
-    POSTGRES_HOST: postgres
-    POSTGRES_DATABASE: dbname
-    POSTGRES_USER: user
-    POSTGRES_PASSWORD: password
+  backup:
+    image: eeshugerman/postgres-backup-s3:13
+    environment:
+      SCHEDULE: '@weekly'     # optional
+      BACKUP_KEEP_DAYS: 7     # optional
+      PASSPHRASE: passphrase  # optional
+      S3_REGION: region
+      S3_ACCESS_KEY_ID: key
+      S3_SECRET_ACCESS_KEY: secret
+      S3_BUCKET: my-bucket
+      S3_PREFIX: backup
+      POSTGRES_HOST: postgres
+      POSTGRES_DATABASE: dbname
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
 ```
 
 - Images are tagged by the major PostgreSQL version they support: `10`, `11`, `12`, `13`, or `14`.
