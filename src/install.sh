@@ -17,7 +17,10 @@ pip3 install awscli
 
 # install go-cron
 apk add curl
-curl -L https://github.com/odise/go-cron/releases/download/v0.0.6/go-cron-linux.gz | zcat > /usr/local/bin/go-cron
+curl -L https://github.com/ivoronin/go-cron/releases/download/v0.0.5/go-cron_0.0.5_linux_${TARGETARCH}.tar.gz -O
+tar xvf go-cron_0.0.5_linux_${TARGETARCH}.tar.gz
+rm go-cron_0.0.5_linux_${TARGETARCH}.tar.gz
+mv go-cron /usr/local/bin/go-cron
 chmod u+x /usr/local/bin/go-cron
 apk del curl
 
