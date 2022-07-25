@@ -90,11 +90,11 @@ if [ -n "$BACKUP_KEEP_DAYS" ]; then
   backups_query="Contents[?LastModified<='${date_from_remove} 00:00:00'].{Key: Key}"
 
   echo "Removing old backup from $S3_BUCKET..."
-  aws s3api list-objects \
+  aws $aws_args s3api list-objects \
     --bucket "${S3_BUCKET}" \
     --prefix "${S3_PREFIX}" \
     --query "${backups_query}" \
     --output text \
-    | xargs -n1 -t -I 'KEY' aws s3 rm s3://"${S3_BUCKET}"/'KEY'
+    | xargs -n1 -t -I 'KEY' aws $aws_args s3 rm s3://"${S3_BUCKET}"/'KEY'
   echo "Removing complete."
 fi
