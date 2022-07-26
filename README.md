@@ -63,18 +63,19 @@ docker compose up -d
 This project is a fork and re-structuring of @schickling's [postgres-backup-s3](https://github.com/schickling/dockerfiles/tree/master/postgres-backup-s3) and [postgres-restore-s3](https://github.com/schickling/dockerfiles/tree/master/postgres-restore-s3).
 
 ## Fork goals
+These changes would have been difficult or impossible merge into @schickling's repo or similarly-structured forks.
   - [x] dedicated repository
   - [x] automated builds
   - [x] support multiple PostgreSQL versions
   - [x] backup and restore with one image
-  - [x] support encrypted (password-protected) backups
-  - [x] option to restore from specific backup by timestamp
-  - [x] auto-removal old backups
 
-## Other changes
+## Other changes and features
+  - some environment variables renamed or removed
   - uses `pg_dump`'s `custom` format (see [docs](https://www.postgresql.org/docs/10/app-pgdump.html))
-  - doesn't use Python 2
-  - backup blobs and all schemas by default
   - drop and re-create all database objects on restore
-  - some env vars renamed or removed
+  - backup blobs and all schemas by default
+  - no Python 2 dependencies
   - filter backups on S3 by database name
+  - support encrypted (password-protected) backups
+  - support for restoring from a specific backup by timestamp
+  - support for auto-removal of old backups
