@@ -30,8 +30,7 @@ if [ -z "$POSTGRES_USER" ]; then
 fi
 
 if [ -z "$POSTGRES_PASSWORD" ]; then
-  echo "You need to set the POSTGRES_PASSWORD environment variable" \
-       "or link to a container named POSTGRES."
+  echo "You need to set the POSTGRES_PASSWORD environment variable."
   exit 1
 fi
 
