@@ -36,9 +36,9 @@ echo "Backup complete."
 
 if [ -n "$DISCORD_WEBHOOK_URL" ]; then
   echo "Sending notification to Discord..."
-  curl -X POST -H "Content-Type: application/json" \
-    -d "{\"content\": \"Backup of $POSTGRES_DATABASE database completed: $s3_uri \"}" \
-    "$DISCORD_WEBHOOK_URL"
+
+  python3 -c "import requests; requests.post('$DISCORD_WEBHOOK_URL', json={'content': '[**backup**] of $POSTGRES_DATABASE database completed on $timestamp. URL: $s3_uri'})"
+
   echo "Notification sent."
 fi
 
