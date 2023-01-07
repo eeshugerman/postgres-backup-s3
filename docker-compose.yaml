@@ -26,3 +26,4 @@ services:
       POSTGRES_DATABASE: postgres
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
+      DISCORD_WEBHOOK_URL: https://discord.com/api/webhooks/1234567890/abcdefghijklmnopqrstuvwxyz

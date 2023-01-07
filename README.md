@@ -33,6 +33,7 @@ services:
 - If `PASSPHRASE` is provided, the backup will be encrypted using GPG.
 - Run `docker exec <container name> sh backup.sh` to trigger a backup ad-hoc
 - Use `BACKUP_KEEP_DAYS` to set time for how long you want to keep backup.
+- Use `DISCORD_WEBHOOK_URL` to send a notification on discord channel after a succesfully backup.
 
 ## Restore
 > **WARNING:** DATA LOSS! All database objects will be dropped and re-created.

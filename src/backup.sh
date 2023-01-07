@@ -34,6 +34,14 @@ rm "$local_file"
 
 echo "Backup complete."
 
+if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+  echo "Sending notification to Discord..."
+  curl -X POST -H "Content-Type: application/json" \
+    -d "{\"content\": \"Backup of $POSTGRES_DATABASE database completed: $s3_uri \"}" \
+    "$DISCORD_WEBHOOK_URL"
+  echo "Notification sent."
+fi
+
 if [ -n "$BACKUP_KEEP_DAYS" ]; then
   sec=$((86400*BACKUP_KEEP_DAYS))
   date_from_remove=$(date -d "@$(($(date +%s) - sec))" +%Y-%m-%d)
