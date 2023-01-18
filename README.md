@@ -17,6 +17,7 @@ services:
       SCHEDULE: '@weekly'     # optional
       BACKUP_KEEP_DAYS: 7     # optional
       PASSPHRASE: passphrase  # optional
+      #S3_ENDPOINT=https://s3_compatable_endpoint.com # optional, for non-AWS s3 compatiable storage
       S3_REGION: region
       S3_ACCESS_KEY_ID: key
       S3_SECRET_ACCESS_KEY: secret
