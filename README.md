@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: password
 
   backup:
-    image: eeshugerman/postgres-backup-s3:13
+    image: eeshugerman/postgres-backup-s3:15
     environment:
       SCHEDULE: '@weekly'     # optional
       BACKUP_KEEP_DAYS: 7     # optional
@@ -28,11 +28,12 @@ services:
       POSTGRES_PASSWORD: password
 ```
 
-- Images are tagged by the major PostgreSQL version they support: `10`, `11`, `12`, `13`, or `14`.
+- Images are tagged by the major PostgreSQL version supported: `11`, `12`, `13`, `14`, or `15`.
 - The `SCHEDULE` variable determines backup frequency. See go-cron schedules documentation [here](http://godoc.org/github.com/robfig/cron#hdr-Predefined_schedules). Omit to run the backup immediately and then exit.
 - If `PASSPHRASE` is provided, the backup will be encrypted using GPG.
-- Run `docker exec <container name> sh backup.sh` to trigger a backup ad-hoc
-- Use `BACKUP_KEEP_DAYS` to set time for how long you want to keep backup.
+- Run `docker exec <container name> sh backup.sh` to trigger a backup ad-hoc.
+- If `BACKUP_KEEP_DAYS` is set, backups older than this many days will be deleted from S3.
+- Set `S3_ENDPOINT` if you're using a non-AWS S3-compatible storage provider.
 
 ## Restore
 > **WARNING:** DATA LOSS! All database objects will be dropped and re-created.
@@ -64,10 +65,10 @@ This project is a fork and re-structuring of @schickling's [postgres-backup-s3](
 
 ## Fork goals
 These changes would have been difficult or impossible merge into @schickling's repo or similarly-structured forks.
-  - [x] dedicated repository
-  - [x] automated builds
-  - [x] support multiple PostgreSQL versions
-  - [x] backup and restore with one image
+  - dedicated repository
+  - automated builds
+  - support multiple PostgreSQL versions
+  - backup and restore with one image
 
 ## Other changes and features
   - some environment variables renamed or removed
