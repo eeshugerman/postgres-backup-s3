@@ -19,7 +19,7 @@ s3_uri_base="s3://${S3_BUCKET}/${S3_PREFIX}/${POSTGRES_DATABASE}_${timestamp}.du
 
 if [ -n "$PASSPHRASE" ]; then
   echo "Encrypting backup..."
-  rm db.dump.gpg
+  rm -f db.dump.gpg
   gpg --symmetric --batch --passphrase "$PASSPHRASE" db.dump
   rm db.dump
   local_file="db.dump.gpg"
