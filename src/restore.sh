@@ -35,10 +35,15 @@ if [ -n "$PASSPHRASE" ]; then
   rm db.dump.gpg
 fi
 
-conn_opts="-h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE"
+conn_opts="-h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER"
 
-echo "Restoring from backup..."
-pg_restore $conn_opts --clean --if-exists db.dump
+if [ "$BACKUP_ALL" = "true" ]; then
+  psql -f db.dump $conn_opts
+else
+  echo "Restoring from backup..."
+  pg_restore $conn_opts -d $POSTGRES_DATABASE --clean --if-exists db.dump
+fi
+
 rm db.dump
 
 echo "Restore complete."
