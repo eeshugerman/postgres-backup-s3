@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: 'postgres:${POSTGRES_VERSION}'
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+
+  backup:
+    build:
+      context: '..'
+      args:
+        ALPINE_VERSION: '${ALPINE_VERSION}'
+    environment:
+      # test constants
+      POSTGRES_HOST: postgres
+      POSTGRES_DATABASE: postgres
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      S3_ACCESS_KEY_ID:
+      S3_SECRET_ACCESS_KEY:
+      S3_REGION:
+      S3_BUCKET:
+
+      # test variables
+      PASSPHRASE:
+      SCHEDULE:
+      BACKUP_KEEP_DAYS:
+      S3_PREFIX:

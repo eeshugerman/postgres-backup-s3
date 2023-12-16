@@ -1,2 +1,4 @@
 .idea
 .env
+test/.env
+/test/.direnv/

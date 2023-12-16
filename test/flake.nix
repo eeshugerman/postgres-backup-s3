@@ -8,6 +8,7 @@
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
             nushell
+            docker
           ];
         };
       });
