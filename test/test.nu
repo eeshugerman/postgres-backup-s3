@@ -1,4 +1,5 @@
 use assert
+use std log
 
 # def docker-compose-ps [] {
 #     docker compose ps --format=json | split row "\n" | each { |l| $l | from json }
@@ -20,62 +21,75 @@ $env.SEED_DATABASE = "pagila"
 const DEFAULT_DATABASE = 'postgres'
 
 
-def start-services [] {
-    docker compose --progress=plain up --build --detach
-}
-
 def exec-sql [--database: string ] {
-    # todo: throw on error
     (
         docker exec -i $env.POSTGRES_CONTAINER_NAME psql
             --csv
             --echo-errors
             --variable ON_ERROR_STOP=1
-            --username ($env.POSTGRES_USER)
-            --dbname (if ($database != null) { $database } else { $env.SEED_DATABASE } )
+            --username $env.POSTGRES_USER
+            --dbname (if $database != null { $database } else { $env.SEED_DATABASE })
     ) | from csv
 }
 
-def create-seed-database [] {
+def create-services [] {
+    log info "Creating services"
+    docker compose --progress=plain up --build --detach
+}
+def delete-services [] {
+    log info "Deleting services"
+    docker compose --progress=plain down
+}
+
+def create-test-db [] {
+    log info "Creating empty test database"
     $'CREATE DATABASE ($env.SEED_DATABASE);' | exec-sql --database $DEFAULT_DATABASE
 }
-def wipe-seed [] {
+def drop-test-db [] {
+    log info "Dropping test database"
     $'DROP DATABASE IF EXISTS ($env.SEED_DATABASE);' | exec-sql --database $DEFAULT_DATABASE
 }
 
-def seed [] {
-    wipe-seed
-    create-seed-database
+def populate-test-db [] {
+    log info "Populating test database"
     open ./seed-data/pagila/pagila-schema.sql | exec-sql
     open ./seed-data/pagila/pagila-data.sql   | exec-sql
 }
-def assert-populated [] {
-    let rows = 'SELECT count(1) FROM public.customer;' | exec-sql
-    assert (not ($rows | is-empty)) 'Not populated: failed to select from table'
-    assert ($rows.count.0 > 0) 'Not populated: table is empty'
-    }
-
-def assert-not-populated [] {
-    let rows = 'SELECT count(1) FROM public.customer;' | exec-sql
-    assert (($rows | is-empty) or ($rows.count.0 == 0))
-}
 
 def backup [] {
+    log info "Running backup"
     docker compose exec backup-service sh backup.sh
 }
 
 def restore [] {
-    create-seed-database
+    log info "Running restore"
     docker compose exec backup-service sh restore.sh
 }
 
+def assert-test-db-populated [] {
+    let rows = 'SELECT count(1) FROM public.customer;' | exec-sql
+    assert (not ($rows | is-empty)) 'Not populated: failed to select from table'
+    assert ($rows.count.0 > 0) 'Not populated: table is empty'
+}
+
+def assert-test-db-dne [] {
+    # note may log a psql error (database pagila dne)
+    let rows = 'SELECT count(1) FROM public.customer;' | exec-sql
+    assert (($rows | is-empty) or ($rows.count.0 == 0))
+}
 with-env { POSTGRES_VERSION: "15", ALPINE_VERSION: "3.17" } {
-    start-services
-    seed
-    assert-populated
-    backup
-    wipe-seed
-    assert-not-populated
-    restore
-    assert-populated
+    timeit {
+        delete-services
+        create-services
+        create-test-db
+        populate-test-db
+        assert-test-db-populated
+        backup
+        drop-test-db
+        assert-test-db-dne
+        create-test-db # restore needs it to already exist
+        restore
+        assert-test-db-populated # asserts there's actually data in the table
+        delete-services
+    }
 }
