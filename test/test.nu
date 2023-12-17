@@ -14,8 +14,16 @@ def docker-compose-up [] {
     docker compose --progress=plain up --detach
 }
 
-def start-backup [] {
-    docker compose exec backup sh /backup.sh
+def psql [sql] {
+    docker exec postgres psql --username=user
+}
+
+def seed [] {
+    docker compose exec postgres psql
+}
+
+def restore [] {
+    docker compose exec backup-service sh restore.sh
 }
 
 with-env { POSTGRES_VERSION: "15", ALPINE_VERSION: "3.17" } {
