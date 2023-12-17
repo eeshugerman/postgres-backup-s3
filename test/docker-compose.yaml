@@ -1,18 +1,18 @@
 services:
   postgres:
-    container_name: postgres
+    container_name: '${POSTGRES_CONTAINER_NAME}'
     image: 'postgres:${POSTGRES_VERSION}'
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER:
+      POSTGRES_PASSWORD:
     healthcheck:
-      test: [ "CMD", "pg_isready", "--username=user"]
+      test: [ "CMD", "pg_isready", "--username=${POSTGRES_USER}"]
       interval: 1s
       retries: 5
 
 
   backup-service:
-    container_name: 'backup-service'
+    container_name: '${BACKUP_SERVICE_CONTAINER_NAME}'
     build:
       context: '..'
       args:
@@ -22,19 +22,17 @@ services:
         condition: service_healthy
 
     environment:
-      # test constants
       POSTGRES_HOST: postgres
-      POSTGRES_DATABASE: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_DATABASE:
+      POSTGRES_USER:
+      POSTGRES_PASSWORD:
       S3_ACCESS_KEY_ID:
       S3_SECRET_ACCESS_KEY:
       S3_REGION:
       S3_BUCKET:
 
 
-      # test variables
-      SCHEDULE: '@yearly'
+      # SCHEDULE: '@yearly'
       S3_PREFIX: backup
       # PASSPHRASE: ''
       # BACKUP_KEEP_DAYS: ''

@@ -10,21 +10,34 @@ use assert
 #      (($results | length) > 0))
 # }
 
+
+$env.POSTGRES_CONTAINER_NAME = "postgres"
+$env.BACKUP_SERVICE_CONTAINER_NAME = "backup-service"
+$env.POSTGRES_USER = "postgres"
+$env.POSTGRES_PASSWORD = "secret"
+$env.POSTGRES_DATABASE = "postgres"
+
+
 def docker-compose-up [] {
     docker compose --progress=plain up --build --detach
 }
 
-def exec-sql [sql: string database: string = 'postgres'] {
-    docker exec postgres psql --csv --username=postgres --dbname $database --command $sql | from csv
+def exec-sql [--database: string] {
+    (
+        docker exec -i $env.POSTGRES_CONTAINER_NAME psql
+            --csv
+            --variable ON_ERROR_STOP=1
+            --username ($env.POSTGRES_USER)
+            --dbname (if ($database != null) { $database } else { $env.POSTGRES_DATABASE } )
+            ) | from csv
 }
 
 def seed [] {
-    exec-psql 'DROP DATABASE IF EXISTS pagila;'
-    exec-psql 'CREATE DATABASE pagila;'
-    open ./seed-data/pagila/pagila-schema.sql
-        | docker exec -i postgres psql --username postgres --dbname pagila
-    open ./seed-data/pagila/pagila-data.sql
-        | docker exec -i postgres psql --username postgres --dbname pagila
+    const database = 'pagila'
+    $'DROP DATABASE IF EXISTS ($database);' | exec-sql
+    $'CREATE DATABASE ($database);'         | exec-sql
+    open ./seed-data/pagila/pagila-schema.sql | exec-sql --database $database
+    open ./seed-data/pagila/pagila-data.sql   | exec-sql --database $database
 }
 
 def restore [] {
@@ -33,5 +46,5 @@ def restore [] {
 
 with-env { POSTGRES_VERSION: "15", ALPINE_VERSION: "3.17" } {
     docker-compose-up
-    start-backup
+    seed
 }
