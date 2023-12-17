@@ -1,11 +1,13 @@
 services:
   postgres:
+    container_name: postgres
     image: 'postgres:${POSTGRES_VERSION}'
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
 
   backup:
+    container_name: backup
     build:
       context: '..'
       args:
@@ -23,6 +25,6 @@ services:
 
       # test variables
       PASSPHRASE:
-      SCHEDULE:
+      SCHEDULE: '@weekly' # todo hmm
       BACKUP_KEEP_DAYS:
       S3_PREFIX:
