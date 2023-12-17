@@ -1,18 +1,9 @@
-# run-tests --threads=0
+# $nu
+# $$ use std testing run tests
+# $$ run-tests --threads=0
 
-use assert
 use std log
-
-# def docker-compose-ps [] {
-#     docker compose ps --format=json | split row "\n" | each { |l| $l | from json }
-# }
-
-# def docker-compose-all-up [] {
-#     let results = docker-compose-ps
-#     (($results | all { |row| $row.Status | str starts-with 'Up' }) and
-#      (($results | length) > 0))
-# }
-
+use assert
 
 const DEFAULT_DATABASE = 'postgres'
 
@@ -38,11 +29,14 @@ def exec-sql [--database: string ] {
 
 def create-services [] {
     log info "Creating services"
-    docker compose --progress=plain up --build --detach
+    let exit_code = docker compose --progress=plain up --build --detach | complete | get exit_code
+    assert ($exit_code == 0) "Failed to create/start services"
 }
+
 def delete-services [] {
     log info "Deleting services"
-    docker compose --progress=plain down
+    let exit_code = docker compose --progress=plain down | complete | get exit_code
+    assert ($exit_code == 0) "Failed to stop/delete services"
 }
 
 def create-test-db [] {
@@ -111,32 +105,33 @@ def full-test [postgres_version: string alpine_version: string] {
     }
 }
 
+
 #[test]
-def test-pg-11 [] {
+def pg-v11 [] {
     full-test '11' '3.10'
 }
 
 #[test]
-def test-pg-12 [] {
+def pg-v12 [] {
     full-test '12' '3.12'
 }
 
 #[test]
-def test-pg-13 [] {
+def pg-v13 [] {
     full-test '13' '3.14'
 }
 
 #[test]
-def test-pg-14 [] {
+def pg-v14 [] {
     full-test '14' '3.16'
 }
 
-#[test]
-def test-pg-15 [] {
-full-test '15' '3.17' # TODO: try 18
+#[test-only]
+def pg-v15 [] {
+    full-test '15' '3.17' # TODO: try 3.18
 }
 
 #[test]
-def test-pg-16 [] {
+def pg-v16 [] {
     full-test '16' '3.19'
 }
