@@ -5,13 +5,22 @@ services:
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
+    healthcheck:
+      test: [ "CMD", "pg_isready", "--username=user"]
+      interval: 1s
+      retries: 5
 
-  backup:
-    container_name: backup
+
+  backup-service:
+    container_name: 'backup-service'
     build:
       context: '..'
       args:
         ALPINE_VERSION: '${ALPINE_VERSION}'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
     environment:
       # test constants
       POSTGRES_HOST: postgres
@@ -23,8 +32,9 @@ services:
       S3_REGION:
       S3_BUCKET:
 
+
       # test variables
-      PASSPHRASE:
-      SCHEDULE: '@weekly' # todo hmm
-      BACKUP_KEEP_DAYS:
-      S3_PREFIX:
+      SCHEDULE: '@yearly'
+      S3_PREFIX: backup
+      # PASSPHRASE: ''
+      # BACKUP_KEEP_DAYS: ''
