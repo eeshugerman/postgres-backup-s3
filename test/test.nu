@@ -11,15 +11,20 @@ use assert
 # }
 
 def docker-compose-up [] {
-    docker compose --progress=plain up --detach
+    docker compose --progress=plain up --build --detach
 }
 
-def psql [sql] {
-    docker exec postgres psql --username=user
+def exec-sql [sql: string database: string = 'postgres'] {
+    docker exec postgres psql --csv --username=postgres --dbname $database --command $sql | from csv
 }
 
 def seed [] {
-    docker compose exec postgres psql
+    exec-psql 'DROP DATABASE IF EXISTS pagila;'
+    exec-psql 'CREATE DATABASE pagila;'
+    open ./seed-data/pagila/pagila-schema.sql
+        | docker exec -i postgres psql --username postgres --dbname pagila
+    open ./seed-data/pagila/pagila-data.sql
+        | docker exec -i postgres psql --username postgres --dbname pagila
 }
 
 def restore [] {
