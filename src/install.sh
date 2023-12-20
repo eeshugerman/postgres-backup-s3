@@ -11,9 +11,7 @@ apk add postgresql-client
 # install gpg
 apk add gnupg
 
-apk add python3
-apk add py3-pip  # separate package on edge only
-pip3 install awscli
+apk add aws-cli
 
 # install go-cron
 apk add curl
