@@ -11,11 +11,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - { postgres: 11, alpine: '3.10' }
           - { postgres: 12, alpine: '3.12' }
           - { postgres: 13, alpine: '3.14' }
           - { postgres: 14, alpine: '3.16' }
           - { postgres: 15, alpine: '3.17' }
+          - { postgres: 16, alpine: '3.19' }
 
     steps:
       - name: Checkout repository
