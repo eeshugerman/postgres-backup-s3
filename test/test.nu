@@ -1,5 +1,6 @@
+# TODO: port to janet?
 # $nu
-# $$ use std testing run tests
+# $$ use std testing run-tests
 # $$ run-tests --threads=0
 
 use std log

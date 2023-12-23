@@ -9,6 +9,8 @@
           buildInputs = with pkgs; [
             nushell
             docker
+            janet
+            jpm
           ];
         };
       });
