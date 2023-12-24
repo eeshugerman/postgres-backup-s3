@@ -12,6 +12,8 @@
             janet
             jpm
           ];
+          # needed for jpm to build janet executables (like jfmt)
+          JANET_LIBPATH = nixpkgs.lib.makeLibraryPath [pkgs.janet];
         };
       });
 }
