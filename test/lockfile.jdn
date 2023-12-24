@@ -1,0 +1,6 @@
+@[{:url "https://github.com/zenlor/janet-csv" :tag "d4fd7eb1fe59897ccb8f69cfe36b71349f713bbc" :type :git}
+  {:url "https://github.com/janet-lang/spork.git" :tag "d644da0fd05612a2d5a3c97277bf7b9bb96dcf6b" :type :git}
+  {:url "https://github.com/andrewchambers/janet-posix-spawn.git" :tag "d73057161a8d10f27b20e69f0c1e2ceb3e145f97" :type :git}
+  {:url "https://github.com/andrewchambers/jfmt" :tag "b27dff6bb32b89b20462eec33f50c1583c301b0a" :type :git}
+  {:url "https://github.com/pyrmont/testament" :tag "e497e0a8e9a9814716d6e3f06c67a7da3b2cbe5d" :type :git}
+  {:url "https://github.com/andrewchambers/janet-sh" :tag "221bcc869bf998186d3c56a388c8313060bfd730" :type :git}]
