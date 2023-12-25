@@ -10,25 +10,6 @@
 (def postgres-password "secret")
 (def seed-database "paila")
 
-(def base-env
-  {"POSTGRES_CONTAINER_NAME" postgres-container-name
-   "BACKUP_SERVICE_CONTAINER_NAME" backup-service-container-name
-   "POSTGRES_USER" postgres-user
-   "POSTGRES_PASSWORD" postgres-password
-   "SEED_DATABASE" seed-database})
-
-(def version-pairs
-  [{"POSTGRES_VERSION" "12" "ALPINE_VERSION" "3.12"}
-   {"POSTGRES_VERSION" "13" "ALPINE_VERSION" "3.14"}
-   {"POSTGRES_VERSION" "14" "ALPINE_VERSION" "3.16"}
-   {"POSTGRES_VERSION" "15" "ALPINE_VERSION" "3.17"}
-   # {"POSTGRES_VERSION" "16" "ALPINE_VERSION" "3.19"}
-  ])
-
-(defn export-env [env]
-  (loop [[name val] :pairs env]
-    (os/setenv name val)))
-
 (defn create-services []
   (print "Creating services")
   (sh/$ docker compose --progress=plain up --build --detach))
@@ -82,13 +63,32 @@
           arr))
 
 (defn assert-test-db-dne []
-  # TODO: make this do what the name says more directly
   (let [rows (exec-sql :sql "\\l" :database "postgres")
         dbs (map (fn [db] (db :Name)) rows)]
     (is (not (includes dbs seed-database)))))
 
+(defn export-env [env]
+  (loop [[name val] :pairs env]
+    (os/setenv name val)))
+
+# (def version-pairs
+#   [{"POSTGRES_VERSION" "12" "ALPINE_VERSION" "3.12"}
+#    {"POSTGRES_VERSION" "13" "ALPINE_VERSION" "3.14"}
+#    {"POSTGRES_VERSION" "14" "ALPINE_VERSION" "3.16"}
+#    {"POSTGRES_VERSION" "15" "ALPINE_VERSION" "3.17"}
+#    {"POSTGRES_VERSION" "16" "ALPINE_VERSION" "3.19"}
+# ])
+
 (defn full-test [postgres-version alpine-version]
-  (let [env (merge base-env { "POSTGRES_VERSION" postgres-version "ALPINE_VERSION" alpine-version})]
+  (let [base-env {"POSTGRES_CONTAINER_NAME" postgres-container-name
+                  "BACKUP_SERVICE_CONTAINER_NAME" backup-service-container-name
+                  "POSTGRES_USER" postgres-user
+                  "POSTGRES_PASSWORD" postgres-password
+                  "SEED_DATABASE" seed-database}
+        env (merge base-env
+                   {"POSTGRES_VERSION" postgres-version
+                    "ALPINE_VERSION" alpine-version})]
+    # TODO: cleanup s3 (false negatives!)
     (export-env env)
     (delete-services)
     (create-services)
@@ -101,13 +101,12 @@
     (create-test-db) # restore needs it to already exist
     (restore)
     (assert-test-db-populated) # asserts there's actually data in the table
-    (delete-services)
-    ))
+    (delete-services)))
 
 (deftest pg-12 (full-test "12" "3.12"))
 (deftest pg-13 (full-test "13" "3.14"))
 (deftest pg-14 (full-test "14" "3.16"))
-(deftest pg-15 (full-test "14" "3.18"))
+(deftest pg-15 (full-test "15" "3.18"))
 
 (run-tests!)
 
