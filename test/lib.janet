@@ -4,39 +4,43 @@
 (def divider-heavy "================================================================================")
 (def divider-light "--------------------------------------------------------------------------------")
 
-(defn- group/new []
+(defn- group/new [description]
   @{:type 'group
-    :description nil
+    :description description
     :children @[]
     :before nil
     :before-each nil
     :after nil
     :after-each nil})
 
-(setdyn :group (group/new))
+(var top-group (group/new "<top>"))
+
+(defn- get-parent-group []
+  (or (dyn :group) top-group))
 
 (defn group [description thunk]
-  (array/push
-    ((dyn :group) :children)
-    (with-dyns [:group (group/new)]
+  (def parent-group (get-parent-group))
+  (def this-group
+    (with-dyns [:group (group/new description)]
       (thunk)
-      (dyn :group))))
+      (dyn :group)))
+  (array/push (parent-group :children) this-group))
 
 (defn before [thunk]
-  (set ((dyn :group) :before) thunk))
+  (set ((get-parent-group) :before) thunk))
 
 (defn before-each [thunk]
-  (set ((dyn :group) :before-each) thunk))
+  (set ((get-parent-group) :before-each) thunk))
 
 (defn after [thunk]
-  (set ((dyn :group) :after) thunk))
+  (set ((get-parent-group) :after) thunk))
 
 (defn after-each [thunk]
-  (set ((dyn :group) :after-each) thunk))
+  (set ((get-parent-group) :after-each) thunk))
 
 (defn test [description thunk]
   (array/push
-    ((dyn :group) :children)
+    ((get-parent-group) :children)
     {:type 'test
      :description description
      :thunk thunk}))
@@ -44,54 +48,40 @@
 
 (defn execute-group [group]
   # TODO: catch errors in hooks?
+  # TODO: print output indentation
+  (print (group :description))
   (when-let [before (group :before)]
     (before))
-  (def child-results
+  (def children-results
     (map (fn [child]
            (when-let [before-each (group :before-each)]
              (before-each))
-           (match child
-             {:type 'test :thunk thunk :description desc}
-             (try
-               (do
-                 (thunk)
-                 (printf "* %s ✅" desc)
-                 {:type 'test :test child :passed true})
-               ([err]
-                (printf "* %s ❌" desc)
-                {:type 'test :test child :passed false :error err}))
-             {:type 'group}
-             (execute-group child))
+           (def child-result
+             (match child
+               {:type 'test :thunk thunk :description desc}
+               (try
+                 (do
+                   (thunk)
+                   (printf "* %s ✅" desc)
+                   {:type 'test :description desc :passed true})
+                 ([err]
+                   (printf "* %s ❌" desc)
+                   {:type 'test :description desc :passed false :error err}))
+               {:type 'group}
+               (execute-group child)))
            (when-let [after-each (group :after-each)]
-             (after-each)))
+             (after-each))
+           child-result)
          (group :children)))
   (when-let [after (group :after)]
     (after))
-  {:type 'group :group group :children child-results})
+  {:type 'group :description (group :description) :children children-results})
 
 
 (defn- get-spaces [n]
-  (->> [" "]
-       (generators/cycle)
-       (generators/take 10)
-       (generators/to-array)
-       (splice)
-       (string)))
-
-
-(defn- print-failures [results depth]
-  (def indent (get-spaces (* 2 depth)))
-  (match results
-    {:type 'group :group {:description desc} :children children}
-    (do
-      (print indent (or desc "<default>"))
-      (each child children
-        (print-failures child (+ 1 depth))))
-    {:type 'test :test {:description desc} :error err}
-    (do
-      (print indent desc)
-      (print err)
-      (print))))
+  (->> (range n)
+       (map (fn [x] " "))
+       (string/join)))
 
 
 (defn- filter-failures [results]
@@ -107,20 +97,41 @@
   (merge results {:children filtered-children}))
 
 
+(defn- print-failures [results depth]
+  (def indent (get-spaces (* 2 depth)))
+  (match results
+    {:type 'group :description desc :children children}
+    (do
+      (print indent desc)
+      (each child children
+        (print-failures child (+ 1 depth))))
+    {:type 'test :description desc :error err}
+    (do
+      (print indent desc)
+      (print err)
+      (print))))
+
+
 (defn- count-tests [results]
   (reduce
     (fn [acc child]
       (match child
         {:type 'test :passed true} (merge acc {:passed (+ 1 (acc :passed))})
-        {:type 'test :passed false} (merge acc {:failed (+ 1 (acc :failed))})))
+        {:type 'test :passed false} (merge acc {:failed (+ 1 (acc :failed))})
+        {:type 'group} (let [counts (count-tests child)]
+                         {:passed (+ (acc :passed) (counts :passed))
+                          :failed (+ (acc :failed) (counts :failed))})))
     {:passed 0 :failed 0}
     (results :children)))
 
 
 (defn- report "Default reporter" [results]
+  # TODO: elide implicit top group
   (print "FAILURES:")
+  (print divider-light)
   (print-failures (filter-failures results) 0)
   (print divider-heavy)
+
   (print "SUMMARY:")
   (print divider-light)
   (let [{:passed num-passed :failed num-failed} (count-tests results)
@@ -131,18 +142,22 @@
   (print divider-heavy))
 
 
-(defn run-tests []
-  (def result (execute-group (dyn :group)))
+(defn run-tests [&keys {:exit-on-failure exit-on-failure}]
   (print divider-heavy)
-  (report result)
+  (print "Running tests...")
+  (print divider-light)
+  (def results (execute-group top-group))
+  (print divider-heavy)
+
+  (report results)
+
   (let
-      # TODO: do better and/or suppor override for exit 1
-      [is-repl (and (= "janet" (path/basename (dyn *executable*)))
-                    (all (fn [arg] (not= ".janet" (path/ext arg))) (dyn *args*)))
-       some-failed (some (fn [res] (not (res :passed))) result)]
-    (when (and some-failed (not is-repl))
+    # TODO: do better and/or support override
+    [is-repl (and (= "janet" (path/basename (dyn *executable*)))
+                  (all (fn [arg] (not= ".janet" (path/ext arg))) (dyn *args*)))
+     {:failed num-failed} (count-tests results)]
+    (when (and (> num-failed 0) exit-on-failure (not is-repl))
       (os/exit 1))))
 
-
-(defn reset "Clear defined tests" []
-  (setdyn :group (group/new)))
+(defn reset []
+  (set top-group (group/new "<top>")))

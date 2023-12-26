@@ -1,6 +1,7 @@
 (import testament :prefix "" :exit true)
 (import sh)
 (import csv)
+(import ./lib)
 
 (def bootstrap-database "postgres")
 
@@ -55,7 +56,7 @@
 
 (defn assert-test-db-populated []
   (let [rows (exec-sql :sql "SELECT count(1) from public.customer")]
-    (is (pos? (length rows)) "Not populated: table is empty")))
+    (assert (pos? (length rows)) "Not populated: table is empty")))
 
 (defn- includes [arr val]
   (reduce (fn [acc elem] (or acc (= elem val)))
@@ -65,7 +66,7 @@
 (defn assert-test-db-dne []
   (let [rows (exec-sql :sql "\\l" :database "postgres")
         dbs (map (fn [db] (db :Name)) rows)]
-    (is (not (includes dbs seed-database)))))
+    (assert (not (includes dbs seed-database)))))
 
 (defn export-env [env]
   (loop [[name val] :pairs env]
@@ -103,10 +104,12 @@
     (assert-test-db-populated) # asserts there's actually data in the table
     (delete-services)))
 
-(deftest pg-12 (full-test "12" "3.12"))
-(deftest pg-13 (full-test "13" "3.14"))
-(deftest pg-14 (full-test "14" "3.16"))
-(deftest pg-15 (full-test "15" "3.18"))
+# (deftest pg-12 (full-test "12" "3.12"))
+# (deftest pg-13 (full-test "13" "3.14"))
+# (deftest pg-14 (full-test "14" "3.16"))
+# (deftest pg-15 (full-test "15" "3.18"))
 
-(run-tests!)
+# (run-tests!)
+(import ./lib)
 
+(print "is repl? " (lib/is-repl?))
