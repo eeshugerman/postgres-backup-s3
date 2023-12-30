@@ -1,4 +1,4 @@
-(import testament :prefix "" :exit true)
+(import sofa :as t)
 (import sh)
 (import csv)
 (import ./lib)
@@ -104,12 +104,9 @@
     (assert-test-db-populated) # asserts there's actually data in the table
     (delete-services)))
 
-# (deftest pg-12 (full-test "12" "3.12"))
-# (deftest pg-13 (full-test "13" "3.14"))
-# (deftest pg-14 (full-test "14" "3.16"))
-# (deftest pg-15 (full-test "15" "3.18"))
+(t/test "postgres 12" (full-test "12" "3.12"))
+(t/test "postgres 13" (full-test "13" "3.14"))
+(t/test "postgres 14" (full-test "14" "3.16"))
+(t/test "postgres 15" (full-test "15" "3.18"))
 
-# (run-tests!)
-(import ./lib)
-
-(print "is repl? " (lib/is-repl?))
+(t/run-tests)
