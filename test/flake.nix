@@ -7,7 +7,6 @@
       in {
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
-            nushell
             docker
             janet
             jpm
