@@ -31,6 +31,18 @@
                     --dbname ,(or database seed-database))]
     (csv/parse data true)))
 
+(defn assert-test-db-populated []
+  (let [rows (exec-sql :sql "SELECT count(1) from public.customer")]
+    (assert (pos? (length rows)) "Not populated: table is empty")))
+
+(defn- includes [arr val]
+  (truthy? (find (fn [x] (= val x)) arr)))
+
+(defn assert-test-db-dne []
+  (let [rows (exec-sql :sql "\\l" :database "postgres")
+        dbs (map (fn [db] (db :Name)) rows)]
+    (assert (not (includes dbs seed-database)))))
+
 (defn create-test-db []
   (print "Creating empty test database")
   (exec-sql :sql (string "CREATE DATABASE " seed-database ";")
@@ -39,11 +51,13 @@
 (defn drop-test-db []
   (print "Dropping test database")
   (exec-sql :sql (string "DROP DATABASE IF EXISTS " seed-database ";")
-            :database bootstrap-database))
+            :database bootstrap-database)
+  (assert-test-db-dne))
 
 (defn populate-test-db []
   (print "Populating test database")
-  (exec-sql :file "./seed-data/pagila/pagila-schema.sql"))
+  (exec-sql :file "./seed-data/pagila/pagila-schema.sql")
+  (assert-test-db-populated))
 
 (defn backup []
   (print "Running backup")
@@ -52,20 +66,6 @@
 (defn restore []
   (print "Running restore")
   (sh/$ docker compose exec ,backup-service-container-name sh restore.sh))
-
-(defn assert-test-db-populated []
-  (let [rows (exec-sql :sql "SELECT count(1) from public.customer")]
-    (assert (pos? (length rows)) "Not populated: table is empty")))
-
-(defn- includes [arr val]
-  (reduce (fn [acc elem] (or acc (= elem val)))
-          false
-          arr))
-
-(defn assert-test-db-dne []
-  (let [rows (exec-sql :sql "\\l" :database "postgres")
-        dbs (map (fn [db] (db :Name)) rows)]
-    (assert (not (includes dbs seed-database)))))
 
 (defn export-env [env]
   (loop [[name val] :pairs env]
@@ -81,18 +81,22 @@
                    {"POSTGRES_VERSION" postgres-version
                     "ALPINE_VERSION" alpine-version})]
     # TODO: cleanup s3 (false negatives!)
+
+    # setup
     (export-env env)
     (delete-services)
     (create-services)
     (create-test-db)
     (populate-test-db)
-    (assert-test-db-populated)
+
+    # test
     (backup)
     (drop-test-db)
-    (assert-test-db-dne)
     (create-test-db) # restore needs it to already exist
     (restore)
     (assert-test-db-populated) # asserts there's actually data in the table
+
+    # teardown
     (delete-services)))
 
 (def version-pairs
