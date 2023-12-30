@@ -1,0 +1,8 @@
+# set *user-indent-2-forms*
+# https://github.com/janet-lang/spork/blob/master/bin/janet-format#L52
+["t/before"
+ "t/before-each"
+ "t/after"
+ "t/after-each"
+ "t/section"
+ "t/test"]

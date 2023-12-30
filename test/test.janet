@@ -1,7 +1,6 @@
 (import sofa :as t)
 (import sh)
 (import csv)
-(import ./lib)
 
 (def bootstrap-database "postgres")
 
@@ -72,14 +71,6 @@
   (loop [[name val] :pairs env]
     (os/setenv name val)))
 
-# (def version-pairs
-#   [{"POSTGRES_VERSION" "12" "ALPINE_VERSION" "3.12"}
-#    {"POSTGRES_VERSION" "13" "ALPINE_VERSION" "3.14"}
-#    {"POSTGRES_VERSION" "14" "ALPINE_VERSION" "3.16"}
-#    {"POSTGRES_VERSION" "15" "ALPINE_VERSION" "3.17"}
-#    {"POSTGRES_VERSION" "16" "ALPINE_VERSION" "3.19"}
-# ])
-
 (defn full-test [postgres-version alpine-version]
   (let [base-env {"POSTGRES_CONTAINER_NAME" postgres-container-name
                   "BACKUP_SERVICE_CONTAINER_NAME" backup-service-container-name
@@ -104,9 +95,15 @@
     (assert-test-db-populated) # asserts there's actually data in the table
     (delete-services)))
 
-(t/test "postgres 12" (full-test "12" "3.12"))
-(t/test "postgres 13" (full-test "13" "3.14"))
-(t/test "postgres 14" (full-test "14" "3.16"))
-(t/test "postgres 15" (full-test "15" "3.18"))
+(def version-pairs
+  [{:postgres "12" :alpine "3.12"}
+   {:postgres "13" :alpine "3.14"}
+   {:postgres "14" :alpine "3.16"}
+   {:postgres "15" :alpine "3.17"}
+   {:postgres "16" :alpine "3.19"}])
+
+(each {:postgres pg-version :alpine alpine-version} version-pairs
+  (t/test (string/format "postgres v%s" pg-version)
+    (full-test pg-version alpine-version)))
 
 (t/run-tests)
