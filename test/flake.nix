@@ -10,8 +10,10 @@
             docker
             janet
             jpm
+            awscli2
+            gnupg
           ];
-          # needed for jpm to build janet executables (like jfmt)
+          # needed for jpm to build janet executables (eg janet-format)
           JANET_LIBPATH = nixpkgs.lib.makeLibraryPath [pkgs.janet];
         };
       });

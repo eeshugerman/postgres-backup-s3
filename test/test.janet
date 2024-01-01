@@ -1,14 +1,19 @@
 (import sofa :as t)
 (import sh)
 (import csv)
-
-(def bootstrap-database "postgres")
+(import spork/json)
 
 (def postgres-container-name "postgres")
 (def backup-service-container-name "backup-service")
 (def postgres-user "postgres")
 (def postgres-password "secret")
 (def seed-database "paila")
+(def s3-region "us-east-1")
+(def s3-bucket "postgres-backup-s3-test")
+(def s3-prefix "backup")
+
+(def bootstrap-database "postgres")
+
 
 (defn create-services []
   (print "Creating services")
@@ -59,6 +64,25 @@
   (exec-sql :file "./seed-data/pagila/pagila-schema.sql")
   (assert-test-db-populated))
 
+(defn s3-join-key [ & parts ]
+  (string/join parts "/"))
+
+(defn s3-join-prefix [ & parts ]
+  (string (string/join parts "/") "/"))
+
+(defn s3-list-backups []
+  (as-> (sh/$< aws
+               --no-cli-pager
+               s3api list-objects
+               --bucket ,s3-bucket
+               --prefix ,s3-prefix) res
+        (json/decode res true)
+        (res :Contents)
+        (map (fn [x] (x :Key)) res)))
+
+# (defn s3-delete-backups []
+#   (sh/$ aws s3 rm ,(s3-join-prefix s3-bucket s3-prefix)))
+
 (defn backup []
   (print "Running backup")
   (sh/$ docker compose exec ,backup-service-container-name sh backup.sh))
@@ -76,10 +100,14 @@
                   "BACKUP_SERVICE_CONTAINER_NAME" backup-service-container-name
                   "POSTGRES_USER" postgres-user
                   "POSTGRES_PASSWORD" postgres-password
-                  "SEED_DATABASE" seed-database}
+                  "SEED_DATABASE" seed-database
+                  "S3_REGION" s3-region
+                  "S3_BUCKET" s3-bucket
+                  "S3_PREFIX" s3-prefix}
         env (merge base-env
                    {"POSTGRES_VERSION" postgres-version
                     "ALPINE_VERSION" alpine-version})]
+
     # TODO: cleanup s3 (false negatives!)
 
     # setup
