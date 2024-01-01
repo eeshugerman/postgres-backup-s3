@@ -64,10 +64,10 @@
   (exec-sql :file "./seed-data/pagila/pagila-schema.sql")
   (assert-test-db-populated))
 
-(defn s3-join-key [ & parts ]
+(defn s3-join-key [& parts]
   (string/join parts "/"))
 
-(defn s3-join-prefix [ & parts ]
+(defn s3-join-prefix [& parts]
   (string (string/join parts "/") "/"))
 
 (defn s3-list-backups []
@@ -75,13 +75,34 @@
                --no-cli-pager
                s3api list-objects
                --bucket ,s3-bucket
-               --prefix ,s3-prefix) res
-        (json/decode res true)
-        (res :Contents)
-        (map (fn [x] (x :Key)) res)))
+               --prefix ,s3-prefix) results
+        (json/decode results true)
+        (or (results :Contents) @[])
+        # NOTE: :LastModified is also available here
+        (map (fn [x] (x :Key)) results)))
 
-# (defn s3-delete-backups []
-#   (sh/$ aws s3 rm ,(s3-join-prefix s3-bucket s3-prefix)))
+(defn s3-get-object [key]
+  (let [temp-file-path (sh/$<_ mktemp)]
+    (sh/$ aws
+          --no-cli-pager
+          s3api get-object
+          --bucket ,s3-bucket
+          --key ,key
+          ,temp-file-path)
+    temp-file-path))
+
+(defn assert-backup-encrypted [s3-key]
+  (let [temp-file-path (s3-get-object s3-key)
+        gpg-exit-code (sh/run gpg
+                              --decrypt
+                              --batch
+                              --passphrase "FIXME"
+                              ,temp-file-path)]
+    (assert (= 0 gpg-exit-code))))
+
+(defn s3-delete-backups []
+  (let [s3uri (string "s3://" (s3-join-prefix s3-bucket s3-prefix))]
+    (sh/$ aws s3 rm --recursive ,s3uri)))
 
 (defn backup []
   (print "Running backup")
