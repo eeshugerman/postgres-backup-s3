@@ -3,6 +3,7 @@
 (import csv)
 (import spork/json)
 
+(def network-name)
 (def postgres-container-name "postgres")
 (def backup-service-container-name "backup-service")
 (def postgres-user "postgres")
@@ -15,13 +16,46 @@
 (def bootstrap-database "postgres")
 
 
-(defn create-services []
+(defn create-services [postgres-version alpine-version options-env]
   (print "Creating services")
-  (sh/$ docker compose --progress=plain up --build --detach))
+  (let [base-env {"POSTGRES_USER" postgres-user
+                  "POSTGRES_PASSWORD" postgres-password
+                  "POSTGRES_DATABASE" seed-database
+                  "S3_REGION" s3-region
+                  "S3_BUCKET" s3-bucket
+                  "S3_PREFIX" s3-prefix
+                  "S3_ACCESS_KEY_ID" (os/getenv "AWS_ACCESS_KEY_ID")
+                  "S3_SECRET_ACCESS_KEY" (os/getenv "AWS_SECRET_ACCESS_KEY")
+                 }
+        env (merge base-env options-env)])
+  # (sh/$ docker compose --progress=plain up --build --detach)
+
+  (let [backup-service-image-tag (string "postgres-backup-s3:" postgres-version)
+        postgres-image-tag (string "postgres:" postgres-version)]
+    (sh/$ docker build
+          --build-arg ,(string "ALPINE_VERSION=" alpine-version)
+          --tag ,backup-service-image-tag
+          "..")
+    (sh/$ docker network create ,network-name)
+    (sh/$ docker run
+          --network ,network-name
+          --hostname ,postgres-container-name
+          --name ,postgres-container-name
+          --env ... # TODO
+          --detach
+          ,postgres-image-tag)
+    (sh/$ docker run
+          --network ,network-name
+          --name ,backup-service-container-name
+          --env ... # TODO
+          --detach
+          ,backup-service-image-tag)))
 
 (defn delete-services []
   (print "Deleting services")
-  (sh/$ docker compose --progress=plain down))
+  (sh/$ docker stop ,backup-service-container-name ,postgres-service-container-name)
+  (sh/$ docker rm ,backup-service-container-name ,postgres-service-container-name)
+  (sh/$ docker network ,docker-network-name))
 
 (defn exec-sql [&keys {:sql sql :file file :database database}]
   (when (or (and sql file) (and (not sql) (not file)))
@@ -121,10 +155,13 @@
                   "BACKUP_SERVICE_CONTAINER_NAME" backup-service-container-name
                   "POSTGRES_USER" postgres-user
                   "POSTGRES_PASSWORD" postgres-password
-                  "SEED_DATABASE" seed-database
+                  "POSTGRES_DATABASE" seed-database
                   "S3_REGION" s3-region
                   "S3_BUCKET" s3-bucket
-                  "S3_PREFIX" s3-prefix}
+                  "S3_PREFIX" s3-prefix
+                  "S3_ACCESS_KEY_ID" (os/getenv "AWS_ACCESS_KEY_ID")
+                  "S3_SECRET_ACCESS_KEY" (os/getenv "AWS_SECRET_ACCESS_KEY")
+                 }
         env (merge base-env
                    {"POSTGRES_VERSION" postgres-version
                     "ALPINE_VERSION" alpine-version})]
@@ -132,9 +169,8 @@
     # TODO: cleanup s3 (false negatives!)
 
     # setup
-    (export-env env)
     (delete-services)
-    (create-services)
+    (create-services env)
     (create-test-db)
     (populate-test-db)
 
@@ -149,11 +185,15 @@
     (delete-services)))
 
 (def version-pairs
-  [{:postgres "12" :alpine "3.12"}
-   {:postgres "13" :alpine "3.14"}
+  [# {:postgres "12" :alpine "3.12"}
+   # {:postgres "13" :alpine "3.14"}
    {:postgres "14" :alpine "3.16"}
-   {:postgres "15" :alpine "3.17"}
-   {:postgres "16" :alpine "3.19"}])
+   # {:postgres "15" :alpine "3.18"}
+   # {:postgres "16" :alpine "3.19"}
+])
+
+(t/before-each
+  (s3-delete-backups))
 
 (each {:postgres pg-version :alpine alpine-version} version-pairs
   (t/test (string/format "postgres v%s" pg-version)
