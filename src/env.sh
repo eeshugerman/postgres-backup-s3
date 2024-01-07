@@ -3,8 +3,8 @@ if [ -z "$S3_BUCKET" ]; then
   exit 1
 fi
 
-if [ -z "$POSTGRES_DATABASE" ]; then
-  echo "You need to set the POSTGRES_DATABASE environment variable."
+if [ -z "$POSTGRES_DB" ]; then
+  echo "You need to set the POSTGRES_DB environment variable."
   exit 1
 fi
 

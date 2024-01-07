@@ -23,7 +23,7 @@ services:
       S3_BUCKET: my-bucket
       S3_PREFIX: backup
       POSTGRES_HOST: postgres
-      POSTGRES_DATABASE: dbname
+      POSTGRES_DB: dbname
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
 ```
