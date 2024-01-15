@@ -175,7 +175,10 @@
   (loop [[name val] :pairs env]
     (os/setenv name val)))
 
-(defn full-test [postgres-version alpine-version]
+(defn full-test [&keys {:postgres-version postgres-version
+                        :alpine-version alpine-version
+                        :options-env options-env
+                        :file-asserts file-asserts}]
   (let [base-env {"POSTGRES_CONTAINER_NAME" postgres-container-name
                   "BACKUP_SERVICE_CONTAINER_NAME" backup-service-container-name
                   "POSTGRES_USER" postgres-user
@@ -185,8 +188,7 @@
                   "S3_BUCKET" s3-bucket
                   "S3_PREFIX" s3-prefix
                   "S3_ACCESS_KEY_ID" (os/getenv "AWS_ACCESS_KEY_ID")
-                  "S3_SECRET_ACCESS_KEY" (os/getenv "AWS_SECRET_ACCESS_KEY")
-                 }
+                  "S3_SECRET_ACCESS_KEY" (os/getenv "AWS_SECRET_ACCESS_KEY")}
         env (merge base-env
                    {"POSTGRES_VERSION" postgres-version
                     "ALPINE_VERSION" alpine-version})]
@@ -198,6 +200,7 @@
 
     # test
     (backup)
+    # TODO: file asserts here
     (drop-test-db)
     (create-test-db) # restore needs it to already exist
     (restore)
@@ -219,11 +222,19 @@
   (s3-delete-backups))
 
 (each {:postgres pg-version :alpine alpine-version} version-pairs
-  (t/test (string/format "postgres v%s" pg-version)
-    (full-test pg-version alpine-version)))
+  (t/section (string "postgres v" pg-version)
+
+    (t/test "without passphrase"
+      (full-test :postgres-version pg-version
+                 :alpine-version alpine-version))
+
+    (t/test "with passphrase"
+      (full-test :postgres-version pg-version
+                 :alpine-version alpine-version
+                 :options-env {"PASSPHRASE" "supp"}))))
 
 (t/after-each
- # cleanup in case of failure
- (delete-services))
+  # cleanup in case of failure
+  (delete-services))
 
 (t/run-tests)
