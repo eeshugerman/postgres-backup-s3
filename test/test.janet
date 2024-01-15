@@ -15,13 +15,15 @@
 
 (def bootstrap-database "postgres")
 
-(defn build-docker-env-flags [env]
-  (reduce (fn [acc (key val)]
-            [(splice acc) "--env" (string key "=" val)])
-          []
-          (pairs env)))
 
-(defn create-services [postgres-version alpine-version options-env]
+(defn create-services [pg-version alpine-version options-env]
+
+  (defn build-docker-env-flags [env]
+    (reduce (fn [acc (key val)]
+              [(splice acc) "--env" (string key "=" val)])
+            []
+            (pairs env)))
+
   (defn wait-for-postgres []
     (var attempts 0)
     (while true
@@ -35,10 +37,11 @@
       (ev/sleep 1)))
 
   (print "Creating services")
-  (let [backup-service-image-tag (string "postgres-backup-s3:" postgres-version)
-        postgres-image-tag (string "postgres:" postgres-version)]
+  (let [backup-service-image-tag (string "postgres-backup-s3:" pg-version)
+        postgres-image-tag (string "postgres:" pg-version)]
 
     (sh/$ docker build
+          --progress plain
           --build-arg ,(string "ALPINE_VERSION=" alpine-version)
           --tag ,backup-service-image-tag
           "..")
@@ -46,41 +49,54 @@
     (sh/$ docker network create ,network-name)
 
     (sh/$ docker run
+          --rm
           --network ,network-name
           --hostname ,postgres-container-name
           --name ,postgres-container-name
-          ;(build-docker-env-flags {"POSTGRES_USER" postgres-user
-                                    "POSTGRES_PASSWORD" postgres-password
-                                    "POSTGRES_DATABASE" seed-database})
+          ;(build-docker-env-flags
+             {"POSTGRES_USER" postgres-user
+              "POSTGRES_PASSWORD" postgres-password
+              "POSTGRES_DATABASE" seed-database})
           --detach
           ,postgres-image-tag)
 
     (wait-for-postgres)
 
     (sh/$ docker run
+          --rm
           --network ,network-name
           --name ,backup-service-container-name
-          ;(build-docker-env-flags (merge {"POSTGRES_HOST" postgres-container-name
-                                           "POSTGRES_USER" postgres-user
-                                           "POSTGRES_PASSWORD" postgres-password
-                                           "POSTGRES_DATABASE" seed-database
-                                           "S3_REGION" s3-region
-                                           "S3_BUCKET" s3-bucket
-                                           "S3_PREFIX" s3-prefix
-                                           "S3_ACCESS_KEY_ID" (os/getenv "AWS_ACCESS_KEY_ID")
-                                           "S3_SECRET_ACCESS_KEY" (os/getenv "AWS_SECRET_ACCESS_KEY")
-                                           # prevent immediate exit
-                                           "SCHEDULE" "@yearly"}
-                                          options-env))
+          ;(build-docker-env-flags
+             (merge {"POSTGRES_HOST" postgres-container-name
+                     "POSTGRES_USER" postgres-user
+                     "POSTGRES_PASSWORD" postgres-password
+                     "POSTGRES_DATABASE" seed-database
+                     "S3_REGION" s3-region
+                     "S3_BUCKET" s3-bucket
+                     "S3_PREFIX" s3-prefix
+                     "S3_ACCESS_KEY_ID" (os/getenv "AWS_ACCESS_KEY_ID")
+                     "S3_SECRET_ACCESS_KEY" (os/getenv "AWS_SECRET_ACCESS_KEY")
+                     # prevent immediate exit
+                     # instead, maybe we should start the container in `backup`
+                     "SCHEDULE" "@yearly"}
+                    options-env))
           --detach
           ,backup-service-image-tag)))
 
+(defn is-service-up [container-name]
+  # using json because otherwise header row is always present
+  (-> (sh/$< docker ps --format json --filter ,(string "name=^" container-name "$"))
+      (length)
+      (> 0)))
+
 (defn delete-services []
   (print "Deleting services")
-  # TODO: only ignore DNE errors
-  (sh/run docker stop ,backup-service-container-name ,postgres-container-name)
-  (sh/run docker rm ,backup-service-container-name ,postgres-container-name)
-  (sh/run docker network rm ,network-name))
+  (each container-name [backup-service-container-name postgres-container-name]
+    (when (is-service-up container-name)
+      # we run start containers with --rm, so all we need to do here is stop it
+      (sh/$ docker stop ,container-name)))
+  # --force to ignore DNE
+  (sh/$ docker network rm --force ,network-name))
 
 (defn exec-sql [&keys {:sql sql :file file :database database}]
   (when (or (and sql file) (and (not sql) (not file)))
@@ -136,9 +152,12 @@
                --bucket ,s3-bucket
                --prefix ,s3-prefix) results
         (json/decode results true)
-        (or (results :Contents) @[])
-        # NOTE: :LastModified is also available here
-        (map (fn [x] (x :Key)) results)))
+        (or (results :Contents) @[])))
+
+# (defn s3-get-latest-backup-key []
+#   (reduce2 (fn []
+#             )
+#           (s3-list-backups)))
 
 (defn s3-get-object [key]
   (let [temp-file-path (sh/$<_ mktemp)]
@@ -171,11 +190,15 @@
   (print "Running restore")
   (sh/$ docker exec ,backup-service-container-name sh restore.sh))
 
-(defn export-env [env]
-  (loop [[name val] :pairs env]
-    (os/setenv name val)))
+(def version-pairs
+  [{:postgres "12" :alpine "3.12"}
+   {:postgres "13" :alpine "3.14"}
+   # {:postgres "14" :alpine "3.16"}
+   # {:postgres "15" :alpine "3.18"}
+   # {:postgres "16" :alpine "3.19"}
+])
 
-(defn full-test [&keys {:postgres-version postgres-version
+(defn full-test [&keys {:pg-version pg-version
                         :alpine-version alpine-version
                         :options-env options-env
                         :file-asserts file-asserts}]
@@ -190,11 +213,11 @@
                   "S3_ACCESS_KEY_ID" (os/getenv "AWS_ACCESS_KEY_ID")
                   "S3_SECRET_ACCESS_KEY" (os/getenv "AWS_SECRET_ACCESS_KEY")}
         env (merge base-env
-                   {"POSTGRES_VERSION" postgres-version
+                   {"POSTGRES_VERSION" pg-version
                     "ALPINE_VERSION" alpine-version})]
 
     # setup
-    (create-services postgres-version alpine-version {})
+    (create-services pg-version alpine-version {})
     (create-test-db)
     (populate-test-db)
 
@@ -209,29 +232,22 @@
     # teardown
     (delete-services)))
 
-(def version-pairs
-  [
-   {:postgres "12" :alpine "3.12"}
-   {:postgres "13" :alpine "3.14"}
-   {:postgres "14" :alpine "3.16"}
-   {:postgres "15" :alpine "3.18"}
-   # {:postgres "16" :alpine "3.19"}
-])
+(t/before
+  # cleanup in case previous execution was killed prematurely
+  (delete-services))
 
 (t/before-each
   (s3-delete-backups))
 
 (each {:postgres pg-version :alpine alpine-version} version-pairs
   (t/section (string "postgres v" pg-version)
-
     (t/test "without passphrase"
-      (full-test :postgres-version pg-version
+      (full-test :pg-version pg-version
                  :alpine-version alpine-version))
-
     (t/test "with passphrase"
-      (full-test :postgres-version pg-version
+      (full-test :pg-version pg-version
                  :alpine-version alpine-version
-                 :options-env {"PASSPHRASE" "supp"}))))
+                 :options-env {"PASSPHRASE" "supersecret"}))))
 
 (t/after-each
   # cleanup in case of failure
