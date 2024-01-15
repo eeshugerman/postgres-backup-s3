@@ -17,38 +17,34 @@
 
 (defn build-docker-env-flags [env]
   (reduce (fn [acc (key val)]
-            [(splice acc) ~--env (string key "=" val)])
+            [(splice acc) "--env" (string key "=" val)])
           []
           (pairs env)))
 
-(defn select-entries [table keys]
-  (reduce (fn [acc key]
-            (merge acc {key (get table key)}))
-          {}
-          keys))
-
 (defn create-services [postgres-version alpine-version options-env]
-  (print "Creating services")
-  (let [base-env {"POSTGRES_USER" postgres-user
-                  "POSTGRES_PASSWORD" postgres-password
-                  "POSTGRES_DATABASE" seed-database
-                  "S3_REGION" s3-region
-                  "S3_BUCKET" s3-bucket
-                  "S3_PREFIX" s3-prefix
-                  "S3_ACCESS_KEY_ID" (os/getenv "AWS_ACCESS_KEY_ID")
-                  "S3_SECRET_ACCESS_KEY" (os/getenv "AWS_SECRET_ACCESS_KEY")
-                 }
-        env (merge base-env options-env)]
-    # (sh/$ docker compose --progress=plain up --build --detach)
-    )
+  (defn wait-for-postgres []
+    (var attempts 0)
+    (while true
+      (let [[rc] (sh/run docker exec ,postgres-container-name pg_isready)
+            ready (= 0 rc)]
+        (set attempts (+ 1 attempts))
+        (when ready
+          (break))
+        (when (> attempts 10)
+          (error "Timed out waiting for Postgres to start")))
+      (ev/sleep 1)))
 
+  (print "Creating services")
   (let [backup-service-image-tag (string "postgres-backup-s3:" postgres-version)
         postgres-image-tag (string "postgres:" postgres-version)]
+
     (sh/$ docker build
           --build-arg ,(string "ALPINE_VERSION=" alpine-version)
           --tag ,backup-service-image-tag
           "..")
+
     (sh/$ docker network create ,network-name)
+
     (sh/$ docker run
           --network ,network-name
           --hostname ,postgres-container-name
@@ -58,21 +54,24 @@
                                     "POSTGRES_DATABASE" seed-database})
           --detach
           ,postgres-image-tag)
-    (ev/sleep 5) # TODO: poll for healthy
+
+    (wait-for-postgres)
+
     (sh/$ docker run
           --network ,network-name
           --name ,backup-service-container-name
-          ;(build-docker-env-flags {"POSTGRES_HOST" postgres-container-name
-                                   "POSTGRES_USER" postgres-user
-                                   "POSTGRES_PASSWORD" postgres-password
-                                   "POSTGRES_DATABASE" seed-database
-                                   "S3_REGION" s3-region
-                                   "S3_BUCKET" s3-bucket
-                                   "S3_PREFIX" s3-prefix
-                                   "S3_ACCESS_KEY_ID" (os/getenv "AWS_ACCESS_KEY_ID")
-                                   "S3_SECRET_ACCESS_KEY" (os/getenv "AWS_SECRET_ACCESS_KEY")
-                                   # TODO: options-env
-                                  })
+          ;(build-docker-env-flags (merge {"POSTGRES_HOST" postgres-container-name
+                                           "POSTGRES_USER" postgres-user
+                                           "POSTGRES_PASSWORD" postgres-password
+                                           "POSTGRES_DATABASE" seed-database
+                                           "S3_REGION" s3-region
+                                           "S3_BUCKET" s3-bucket
+                                           "S3_PREFIX" s3-prefix
+                                           "S3_ACCESS_KEY_ID" (os/getenv "AWS_ACCESS_KEY_ID")
+                                           "S3_SECRET_ACCESS_KEY" (os/getenv "AWS_SECRET_ACCESS_KEY")
+                                           # prevent immediate exit
+                                           "SCHEDULE" "@yearly"}
+                                          options-env))
           --detach
           ,backup-service-image-tag)))
 
@@ -208,10 +207,11 @@
     (delete-services)))
 
 (def version-pairs
-  [# {:postgres "12" :alpine "3.12"}
-   # {:postgres "13" :alpine "3.14"}
+  [
+   {:postgres "12" :alpine "3.12"}
+   {:postgres "13" :alpine "3.14"}
    {:postgres "14" :alpine "3.16"}
-   # {:postgres "15" :alpine "3.18"}
+   {:postgres "15" :alpine "3.18"}
    # {:postgres "16" :alpine "3.19"}
 ])
 
