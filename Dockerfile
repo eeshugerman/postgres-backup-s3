@@ -5,7 +5,7 @@ ARG TARGETARCH
 ADD src/install.sh install.sh
 RUN sh install.sh && rm install.sh
 
-ENV POSTGRES_DATABASE ''
+ENV POSTGRES_DB ''
 ENV POSTGRES_HOST ''
 ENV POSTGRES_PORT 5432
 ENV POSTGRES_USER ''
