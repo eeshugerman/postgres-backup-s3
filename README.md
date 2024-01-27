@@ -36,12 +36,17 @@ services:
 - Set `S3_ENDPOINT` if you're using a non-AWS S3-compatible storage provider.
 
 ## Restore
-> **WARNING:** DATA LOSS! All database objects will be dropped and re-created.
+> [!CAUTION]
+> DATA LOSS! All database objects will be dropped and re-created.
+
 ### ... from latest backup
 ```sh
 docker exec <container name> sh restore.sh
 ```
-> **NOTE:** If your bucket has more than a 1000 files, the latest may not be restored -- only one S3 `ls` command is used
+
+> [!NOTE]
+> If your bucket has more than a 1000 files, the latest may not be restored -- only one S3 `ls` command is used
+
 ### ... from specific backup
 ```sh
 docker exec <container name> sh restore.sh <timestamp>
