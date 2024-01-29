@@ -21,6 +21,7 @@ ENV S3_S3V4 'no'
 ENV SCHEDULE ''
 ENV PASSPHRASE ''
 ENV BACKUP_KEEP_DAYS ''
+ENV BACKUP_ALL 'false'
 
 ADD src/run.sh run.sh
 ADD src/env.sh env.sh

@@ -7,10 +7,16 @@ source ./env.sh
 
 s3_uri_base="s3://${S3_BUCKET}/${S3_PREFIX}"
 
-if [ -z "$PASSPHRASE" ]; then
-  file_type=".dump"
+if [ "$BACKUP_ALL" = "true" ]; then
+  file_ext=".dump.gz"
 else
-  file_type=".dump.gpg"
+  file_ext=".dump"
+fi
+
+if [ -z "$PASSPHRASE" ]; then
+  file_type=$file_ext
+else
+  file_type="${file_ext}.gpg"
 fi
 
 if [ $# -eq 1 ]; then
@@ -31,14 +37,21 @@ aws $aws_args s3 cp "${s3_uri_base}/${key_suffix}" "db${file_type}"
 
 if [ -n "$PASSPHRASE" ]; then
   echo "Decrypting backup..."
-  gpg --decrypt --batch --passphrase "$PASSPHRASE" db.dump.gpg > db.dump
-  rm db.dump.gpg
+  gpg --decrypt --batch --passphrase "$PASSPHRASE" db$file_type > db$file_ext
+  rm db$file_type
 fi
 
-conn_opts="-h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE"
+conn_opts="-h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER"
 
-echo "Restoring from backup..."
-pg_restore $conn_opts --clean --if-exists db.dump
+if [ "$BACKUP_ALL" = "true" ]; then
+  gunzip db.dump.gz
+  echo "Restoring all databases..."
+  psql -f db.dump $conn_opts
+else
+  echo "Restoring from backup..."
+  pg_restore $conn_opts -d $POSTGRES_DATABASE --clean --if-exists db.dump
+fi
+
 rm db.dump
 
 echo "Restore complete."

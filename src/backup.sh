@@ -5,27 +5,40 @@ set -o pipefail
 
 source ./env.sh
 
-echo "Creating backup of $POSTGRES_DATABASE database..."
-pg_dump --format=custom \
-        -h $POSTGRES_HOST \
-        -p $POSTGRES_PORT \
-        -U $POSTGRES_USER \
-        -d $POSTGRES_DATABASE \
-        $PGDUMP_EXTRA_OPTS \
-        > db.dump
+if [ "$BACKUP_ALL" = "true" ]; then
+  echo "Creating backup of all databases..."
+  file_ext="dump.gz"
+  pg_dumpall --clean \
+             -h $POSTGRES_HOST \
+             -p $POSTGRES_PORT \
+             -U $POSTGRES_USER \
+             $PGDUMP_EXTRA_OPTS \
+             > db.dump
+  gzip db.dump
+else
+  echo "Creating backup of $POSTGRES_DATABASE database..."
+  file_ext="dump"
+  pg_dump --format=custom \
+          -h $POSTGRES_HOST \
+          -p $POSTGRES_PORT \
+          -U $POSTGRES_USER \
+          -d $POSTGRES_DATABASE \
+          $PGDUMP_EXTRA_OPTS \
+          > db.dump
+fi
 
 timestamp=$(date +"%Y-%m-%dT%H:%M:%S")
-s3_uri_base="s3://${S3_BUCKET}/${S3_PREFIX}/${POSTGRES_DATABASE}_${timestamp}.dump"
+s3_uri_base="s3://${S3_BUCKET}/${S3_PREFIX}/${POSTGRES_DATABASE}_${timestamp}.${file_ext}"
 
 if [ -n "$PASSPHRASE" ]; then
   echo "Encrypting backup..."
-  rm -f db.dump.gpg
-  gpg --symmetric --batch --passphrase "$PASSPHRASE" db.dump
-  rm db.dump
-  local_file="db.dump.gpg"
+  rm -f db.$file_ext.gpg
+  gpg --symmetric --batch --passphrase "$PASSPHRASE" db.$file_ext
+  rm db.$file_ext
+  local_file="db.${file_ext}.gpg"
   s3_uri="${s3_uri_base}.gpg"
 else
-  local_file="db.dump"
+  local_file="db.${file_ext}"
   s3_uri="$s3_uri_base"
 fi
 
