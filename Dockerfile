@@ -2,9 +2,9 @@ ARG ALPINE_VERSION
 FROM alpine:${ALPINE_VERSION}
 ARG TARGETARCH
 
-ADD src/install.sh install.sh
-RUN sh install.sh && rm install.sh
-
+ENV GOROOT /usr/lib/go
+ENV GOPATH /go
+ENV PATH /go/bin:$PATH
 ENV POSTGRES_DATABASE ''
 ENV POSTGRES_HOST ''
 ENV POSTGRES_PORT 5432
@@ -15,16 +15,20 @@ ENV S3_ACCESS_KEY_ID ''
 ENV S3_SECRET_ACCESS_KEY ''
 ENV S3_BUCKET ''
 ENV S3_REGION 'us-west-1'
-ENV S3_PATH 'backup'
+ENV S3_PATH 'backups'
 ENV S3_ENDPOINT ''
-ENV S3_S3V4 'no'
-ENV SCHEDULE ''
+ENV CRON_SCHEDULE '* * * * *'
 ENV PASSPHRASE ''
-ENV BACKUP_KEEP_DAYS ''
+ENV BACKUP_RETENTION_IN_DAYS ''
 
-ADD src/run.sh run.sh
+RUN apk update && apk add --no-cache postgresql-client gnupg git s3cmd
+
 ADD src/env.sh env.sh
 ADD src/backup.sh backup.sh
 ADD src/restore.sh restore.sh
 
-CMD ["sh", "run.sh"]
+RUN chmod +x env.sh backup.sh restore.sh
+
+RUN echo "${CRON_SCHEDULE} cd / && ./backup.sh" >> /var/spool/cron/crontabs/root
+
+CMD ["crond", "-f", "-d", "8"]

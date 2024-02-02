@@ -1,5 +1,15 @@
+if [ -z "$CRON_SCHEDULE" ]; then
+  echo "You need to set the CRON_SCHEDULE environment variable."
+  exit 1
+fi
+
 if [ -z "$S3_BUCKET" ]; then
   echo "You need to set the S3_BUCKET environment variable."
+  exit 1
+fi
+
+if [ -z "$S3_PREFIX" ]; then
+  echo "You need to set the S3_PREFIX environment variable."
   exit 1
 fi
 
@@ -28,13 +38,6 @@ if [ -z "$POSTGRES_PASSWORD" ]; then
   echo "You need to set the POSTGRES_PASSWORD environment variable."
   exit 1
 fi
-
-if [ -z "$S3_ENDPOINT" ]; then
-  aws_args=""
-else
-  aws_args="--endpoint-url $S3_ENDPOINT"
-fi
-
 
 if [ -n "$S3_ACCESS_KEY_ID" ]; then
   export AWS_ACCESS_KEY_ID=$S3_ACCESS_KEY_ID

@@ -12,17 +12,20 @@ services:
     build:
       context: .
       args:
-        ALPINE_VERSION: '3.16'
+        ALPINE_VERSION: "3.17"
     environment:
-      SCHEDULE: '@weekly'     # optional
-      BACKUP_KEEP_DAYS: 7     # optional
-      PASSPHRASE: passphrase  # optional
+      CRON_SCHEDULE: "* * * * *"
+      BACKUP_RETENTION_IN_DAYS: 7
+      PASSPHRASE: passphrase
       S3_REGION:
       S3_ACCESS_KEY_ID:
       S3_SECRET_ACCESS_KEY:
       S3_BUCKET:
-      S3_PREFIX: backup
+      S3_PREFIX: backups
+      S3_ENDPOINT:
       POSTGRES_HOST: postgres
       POSTGRES_DATABASE: postgres
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
+    volumes:
+      - ./tmp:/backups
