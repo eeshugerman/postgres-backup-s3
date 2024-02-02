@@ -3,7 +3,7 @@
 set -u # `-e` omitted intentionally, but i can't remember why exactly :'(
 set -o pipefail
 
-./env.sh
+source ./env.sh
 
 s3_uri_base="s3://${S3_BUCKET}/${S3_PREFIX}"
 

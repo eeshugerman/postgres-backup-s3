@@ -35,7 +35,7 @@ fi
 echo "Syncing local backups with S3..."
 
 s3cmd sync --host=$S3_ENDPOINT --region=$S3_REGION --host-bucket=$S3_BUCKET \
-  --recursive --no-mime-magic --no-preserve --delete-removed --progress --stats --verbose \
+  --no-mime-magic --no-preserve --progress --stats --verbose \
   /backups/ "s3://${S3_BUCKET}/${S3_PREFIX}/"
 
 echo "Backup of ${POSTGRES_DATABASE} completed successfully!"

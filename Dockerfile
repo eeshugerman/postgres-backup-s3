@@ -2,9 +2,6 @@ ARG ALPINE_VERSION
 FROM alpine:${ALPINE_VERSION}
 ARG TARGETARCH
 
-ENV GOROOT /usr/lib/go
-ENV GOPATH /go
-ENV PATH /go/bin:$PATH
 ENV POSTGRES_DATABASE ''
 ENV POSTGRES_HOST ''
 ENV POSTGRES_PORT 5432
@@ -21,7 +18,7 @@ ENV CRON_SCHEDULE '* * * * *'
 ENV PASSPHRASE ''
 ENV BACKUP_RETENTION_IN_DAYS ''
 
-RUN apk update && apk add --no-cache postgresql-client gnupg git s3cmd
+RUN apk update && apk add --no-cache postgresql-client gnupg s3cmd
 
 ADD src/env.sh env.sh
 ADD src/backup.sh backup.sh
