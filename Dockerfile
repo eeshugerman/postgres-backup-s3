@@ -3,7 +3,7 @@ FROM alpine:${ALPINE_VERSION}
 ARG TARGETARCH
 
 ADD src/install.sh install.sh
-RUN sh install.sh && rm install.sh
+RUN apk add --no-cache tzdata && sh install.sh && rm install.sh
 
 ENV POSTGRES_DATABASE ''
 ENV POSTGRES_HOST ''
