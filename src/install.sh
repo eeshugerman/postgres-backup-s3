@@ -5,6 +5,9 @@ set -o pipefail
 
 apk update
 
+# install tzdata
+apk add --no-cache tzdata
+
 # install pg_dump
 apk add postgresql-client
 
