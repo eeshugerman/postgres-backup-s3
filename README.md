@@ -1,8 +1,11 @@
 # Introduction
+
 This project provides Docker images to periodically back up a PostgreSQL database to AWS S3, and to restore from the backup as needed.
 
 # Usage
+
 ## Backup
+
 ```yaml
 services:
   postgres:
@@ -14,9 +17,9 @@ services:
   backup:
     image: eeshugerman/postgres-backup-s3:16
     environment:
-      SCHEDULE: '@weekly'     # optional
-      BACKUP_KEEP_DAYS: 7     # optional
-      PASSPHRASE: passphrase  # optional
+      SCHEDULE: "@weekly" # optional
+      BACKUP_KEEP_DAYS: 7 # optional
+      PASSPHRASE: passphrase # optional
       S3_REGION: region
       S3_ACCESS_KEY_ID: key
       S3_SECRET_ACCESS_KEY: secret
@@ -35,11 +38,60 @@ services:
 - If `BACKUP_KEEP_DAYS` is set, backups older than this many days will be deleted from S3.
 - Set `S3_ENDPOINT` if you're using a non-AWS S3-compatible storage provider.
 
+## Using Docker secrets
+
+You can use either env vars or Docker Secrets to pass credentials to the container. Just add `secrets` section to your docker compose file and use the following replacements:
+
+- `S3_ACCESS_KEY_ID_FILE` instead of `S3_ACCESS_KEY_ID`
+- `S3_SECRET_ACCESS_KEY_FILE` instead of `S3_SECRET_ACCESS_KEY`
+- `POSTGRES_USER_FILE` instead of `POSTGRES_USER`
+- `POSTGRES_PASSWORD_FILE` instead of `POSTGRES_PASSWORD`
+
+You should get your docker compose file like this:
+
+```
+version: "3.8"
+
+services:
+  backup:
+    image: eeshugerman/postgres-backup-s3:16
+    environment:
+      SCHEDULE: "@weekly" # optional
+      BACKUP_KEEP_DAYS: 7 # optional
+      PASSPHRASE: passphrase # optional
+      S3_REGION:
+      S3_BUCKET:
+      S3_PREFIX: backup
+      S3_ACCESS_KEY_ID_FILE: /var/run/aws_access_key_id
+      S3_SECRET_ACCESS_KEY_FILE: /var/run/aws_secret_access_key
+      POSTGRES_HOST: postgres
+      POSTGRES_DATABASE: postgres
+      POSTGRES_USER_FILE: /var/run/postgres_user
+      POSTGRES_PASSWORD_FILE: /var/run/postgres_password
+    secrets:
+      - postgres_user
+      - postgres_password
+      - aws_access_key_id
+      - aws_secret_access_key
+
+secrets:
+  aws_access_key_id:
+    file: secrets/aws_access_key_id.txt
+  aws_secret_access_key:
+    file: secrets/aws_secret_access_key.txt
+  postgres_user:
+    file: secrets/postgres_user.txt
+  postgres_password:
+    file: secrets/postgres_password.txt
+```
+
 ## Restore
+
 > [!CAUTION]
 > DATA LOSS! All database objects will be dropped and re-created.
 
 ### ... from latest backup
+
 ```sh
 docker exec <container name> sh restore.sh
 ```
@@ -48,17 +100,23 @@ docker exec <container name> sh restore.sh
 > If your bucket has more than a 1000 files, the latest may not be restored -- only one S3 `ls` command is used
 
 ### ... from specific backup
+
 ```sh
 docker exec <container name> sh restore.sh <timestamp>
 ```
 
 # Development
+
 ## Build the image locally
+
 `ALPINE_VERSION` determines Postgres version compatibility. See [`build-and-push-images.yml`](.github/workflows/build-and-push-images.yml) for the latest mapping.
+
 ```sh
 DOCKER_BUILDKIT=1 docker build --build-arg ALPINE_VERSION=3.14 .
 ```
+
 ## Run a simple test environment with Docker Compose
+
 ```sh
 cp template.env .env
 # fill out your secrets/params in .env
@@ -66,22 +124,26 @@ docker compose up -d
 ```
 
 # Acknowledgements
+
 This project is a fork and re-structuring of @schickling's [postgres-backup-s3](https://github.com/schickling/dockerfiles/tree/master/postgres-backup-s3) and [postgres-restore-s3](https://github.com/schickling/dockerfiles/tree/master/postgres-restore-s3).
 
 ## Fork goals
+
 These changes would have been difficult or impossible merge into @schickling's repo or similarly-structured forks.
-  - dedicated repository
-  - automated builds
-  - support multiple PostgreSQL versions
-  - backup and restore with one image
+
+- dedicated repository
+- automated builds
+- support multiple PostgreSQL versions
+- backup and restore with one image
 
 ## Other changes and features
-  - some environment variables renamed or removed
-  - uses `pg_dump`'s `custom` format (see [docs](https://www.postgresql.org/docs/10/app-pgdump.html))
-  - drop and re-create all database objects on restore
-  - backup blobs and all schemas by default
-  - no Python 2 dependencies
-  - filter backups on S3 by database name
-  - support encrypted (password-protected) backups
-  - support for restoring from a specific backup by timestamp
-  - support for auto-removal of old backups
+
+- some environment variables renamed or removed
+- uses `pg_dump`'s `custom` format (see [docs](https://www.postgresql.org/docs/10/app-pgdump.html))
+- drop and re-create all database objects on restore
+- backup blobs and all schemas by default
+- no Python 2 dependencies
+- filter backups on S3 by database name
+- support encrypted (password-protected) backups
+- support for restoring from a specific backup by timestamp
+- support for auto-removal of old backups
