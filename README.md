@@ -62,12 +62,12 @@ services:
       S3_REGION:
       S3_BUCKET:
       S3_PREFIX: backup
-      S3_ACCESS_KEY_ID_FILE: /var/run/aws_access_key_id
-      S3_SECRET_ACCESS_KEY_FILE: /var/run/aws_secret_access_key
+      S3_ACCESS_KEY_ID_FILE: /run/secrets/aws_access_key_id
+      S3_SECRET_ACCESS_KEY_FILE: /run/secrets/aws_secret_access_key
       POSTGRES_HOST: postgres
       POSTGRES_DATABASE: postgres
-      POSTGRES_USER_FILE: /var/run/postgres_user
-      POSTGRES_PASSWORD_FILE: /var/run/postgres_password
+      POSTGRES_USER_FILE: /run/secrets/postgres_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
     secrets:
       - postgres_user
       - postgres_password
