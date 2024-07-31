@@ -21,7 +21,7 @@ services:
     environment:
       SCHEDULE: "@weekly" # optional
       BACKUP_KEEP_DAYS: 7 # optional
-      #PASSPHRASE: passphrase # optional
+      PASSPHRASE: passphrase # optional
       S3_REGION:
       S3_BUCKET:
       S3_PREFIX: backup
