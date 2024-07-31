@@ -42,6 +42,3 @@ jobs:
           tags: ${{ github.repository }}:${{ matrix.postgres }}
           build-args: |
             ALPINE_VERSION=${{ matrix.alpine }}
-          platforms: |
-            linux/amd64
-            linux/arm64
