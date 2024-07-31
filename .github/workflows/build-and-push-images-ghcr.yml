@@ -1,4 +1,4 @@
-name: build and push images
+name: Build and push images to ghcr.io
 
 on:
   push:
