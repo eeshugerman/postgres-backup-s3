@@ -1,0 +1,52 @@
+name: Build and push images to ghcr.io
+
+on:
+  push:
+    branches: ["master"]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    strategy:
+      matrix:
+        include:
+          - { postgres: 12, alpine: "3.12" }
+          - { postgres: 13, alpine: "3.14" }
+          - { postgres: 14, alpine: "3.16" }
+          - { postgres: 15, alpine: "3.17" }
+          - { postgres: 16, alpine: "3.19" }
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ github.repository }}:${{ matrix.postgres }}
+          build-args: |
+            ALPINE_VERSION=${{ matrix.alpine }}
