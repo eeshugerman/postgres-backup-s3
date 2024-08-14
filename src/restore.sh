@@ -5,6 +5,15 @@ set -o pipefail
 
 source ./env.sh
 
+if [ "$CONFIRM_RESTORE" = "yes" ]; then
+  echo "DATA LOSS! Are you sure you want to restore the database? This will overwrite the current database. (yes/no)"
+  read confirm
+  if [ "$confirm" != "yes" ]; then
+    echo "Restore cancelled."
+    exit 1
+  fi
+fi
+
 s3_uri_base="s3://${S3_BUCKET}/${S3_PREFIX}"
 
 if [ -z "$PASSPHRASE" ]; then

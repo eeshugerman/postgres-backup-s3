@@ -17,6 +17,7 @@ services:
       SCHEDULE: '@weekly'     # optional
       BACKUP_KEEP_DAYS: 7     # optional
       PASSPHRASE: passphrase  # optional
+      CONFIRM_RESTORE: 'no'   # optional
       S3_REGION: region
       S3_ACCESS_KEY_ID: key
       S3_SECRET_ACCESS_KEY: secret
@@ -34,6 +35,7 @@ services:
 - Run `docker exec <container name> sh backup.sh` to trigger a backup ad-hoc.
 - If `BACKUP_KEEP_DAYS` is set, backups older than this many days will be deleted from S3.
 - Set `S3_ENDPOINT` if you're using a non-AWS S3-compatible storage provider.
+- If `CONFIRM_RESTORE` is set to `'yes'`, a confirmation prompt will be displayed before restoring from a backup.
 
 ## Restore
 > [!CAUTION]
@@ -41,7 +43,7 @@ services:
 
 ### ... from latest backup
 ```sh
-docker exec <container name> sh restore.sh
+docker exec -i <container name> sh restore.sh
 ```
 
 > [!NOTE]
@@ -49,7 +51,7 @@ docker exec <container name> sh restore.sh
 
 ### ... from specific backup
 ```sh
-docker exec <container name> sh restore.sh <timestamp>
+docker exec -i <container name> sh restore.sh <timestamp>
 ```
 
 # Development
