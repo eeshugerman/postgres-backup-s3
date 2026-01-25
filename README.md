@@ -31,10 +31,14 @@ services:
       POSTGRES_DATABASE: dbname
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
+      PGDUMP_COMPRESSION: 0 # optional, default 0
+      PGDUMP_EXTRA_OPTS: ""  # optional
 ```
 
 - The `SCHEDULE` variable determines backup frequency. See go-cron schedules documentation [here](http://godoc.org/github.com/robfig/cron#hdr-Predefined_schedules). Omit to run the backup immediately and then exit.
-- If `PASSPHRASE` is provided, the backup will be encrypted using GPG.
+- `PGDUMP_COMPRESSION` controls `pg_dump -Z` compression; `0` disables compression (fastest, larger upload).
+- Backups are streamed directly to S3 and do not require free local disk equal to dump size.
+- Encryption via `PASSPHRASE` is no longer supported.
 - Run `docker exec <container name> sh backup.sh` to trigger a backup ad-hoc.
 - If `BACKUP_KEEP_DAYS` is set, backups older than this many days will be deleted from S3.
 - Set `S3_ENDPOINT` if you're using a non-AWS S3-compatible storage provider.
