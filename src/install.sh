@@ -11,6 +11,9 @@ apk add postgresql-client
 # install pigz
 apk add pigz
 
+# install pv
+apk add pv
+
 apk add aws-cli
 
 # install go-cron
