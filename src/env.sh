@@ -35,6 +35,9 @@ else
   aws_args="--endpoint-url $S3_ENDPOINT"
 fi
 
+if [ -z "${PGDUMP_COMPRESSION:-}" ]; then
+  PGDUMP_COMPRESSION=0
+fi
 
 if [ -n "$S3_ACCESS_KEY_ID" ]; then
   export AWS_ACCESS_KEY_ID=$S3_ACCESS_KEY_ID

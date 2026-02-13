@@ -8,8 +8,11 @@ apk update
 # install pg_dump
 apk add postgresql-client
 
-# install gpg
-apk add gnupg
+# install pigz
+apk add pigz
+
+# install pv
+apk add pv
 
 apk add aws-cli
 
