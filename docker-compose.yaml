@@ -3,7 +3,7 @@
 
 services:
   postgres:
-    image: postgres:14
+    image: postgres:16
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
@@ -12,11 +12,11 @@ services:
     build:
       context: .
       args:
-        ALPINE_VERSION: '3.16'
+        ALPINE_VERSION: "3.20"
     environment:
-      SCHEDULE: '@weekly'     # optional
-      BACKUP_KEEP_DAYS: 7     # optional
-      PASSPHRASE: passphrase  # optional
+      SCHEDULE: "@weekly" # optional
+      BACKUP_KEEP_DAYS: 7 # optional
+      PASSPHRASE: passphrase # optional
       S3_REGION:
       S3_ACCESS_KEY_ID:
       S3_SECRET_ACCESS_KEY:

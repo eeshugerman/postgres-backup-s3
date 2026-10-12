@@ -5,28 +5,34 @@ set -o pipefail
 
 source ./env.sh
 
+dump() {
+  pg_dump --format=custom \
+          -h $POSTGRES_HOST \
+          -p $POSTGRES_PORT \
+          -U $POSTGRES_USER \
+          -d $POSTGRES_DATABASE \
+          $PGDUMP_EXTRA_OPTS
+}
+
 echo "Creating backup of $POSTGRES_DATABASE database..."
-pg_dump --format=custom \
-        -h $POSTGRES_HOST \
-        -p $POSTGRES_PORT \
-        -U $POSTGRES_USER \
-        -d $POSTGRES_DATABASE \
-        $PGDUMP_EXTRA_OPTS \
-        > db.dump
 
 timestamp=$(date +"%Y-%m-%dT%H:%M:%S")
 s3_uri_base="s3://${S3_BUCKET}/${S3_PREFIX}/${POSTGRES_DATABASE}_${timestamp}.dump"
 
 if [ -n "$PASSPHRASE" ]; then
   echo "Encrypting backup..."
-  rm -f db.dump.gpg
-  gpg --symmetric --batch --passphrase "$PASSPHRASE" db.dump
-  rm db.dump
   local_file="db.dump.gpg"
   s3_uri="${s3_uri_base}.gpg"
+  # Stream pg_dump into gpg so the plaintext dump never touches the disk.
+  # Passphrase goes through fd 3 to keep it off the process command line.
+  dump | gpg --symmetric --batch --yes --passphrase-fd 3 \
+    --output "$local_file" 3<<EOF
+$PASSPHRASE
+EOF
 else
   local_file="db.dump"
   s3_uri="$s3_uri_base"
+  dump > "$local_file"
 fi
 
 echo "Uploading backup to $S3_BUCKET..."
